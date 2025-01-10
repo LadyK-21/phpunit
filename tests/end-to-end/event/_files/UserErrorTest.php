@@ -9,6 +9,7 @@
  */
 namespace PHPUnit\TestFixture\Event;
 
+use const E_USER_ERROR;
 use function trigger_error;
 use PHPUnit\Framework\TestCase;
 
@@ -19,5 +20,11 @@ final class UserErrorTest extends TestCase
         $this->assertTrue(true);
 
         trigger_error('message', E_USER_ERROR);
+    }
+
+    public function testUserErrorMustAbortExecution(): void
+    {
+        trigger_error('message', E_USER_ERROR);
+        $this->assertTrue(false);
     }
 }

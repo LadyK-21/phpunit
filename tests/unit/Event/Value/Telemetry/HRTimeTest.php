@@ -20,7 +20,7 @@ use PHPUnit\Framework\TestCase;
 final class HRTimeTest extends TestCase
 {
     /**
-     * @return array<string, array<{0: int, 1: int, 2: int, 3: int>
+     * @return array<string, array{0: int, 1: int, 2: int, 3: int}>
      */
     public static function provideStartGreaterThanEnd(): array
     {
@@ -47,7 +47,7 @@ final class HRTimeTest extends TestCase
     }
 
     /**
-     * @return array<string, array<{0: int, 1: int, 2: int, 3: int, 4: Duration>
+     * @return array<string, array{0: int, 1: int, 2: int, 3: int, 4: Duration}>
      */
     public static function provideStartEndAndDuration(): array
     {
@@ -124,7 +124,7 @@ final class HRTimeTest extends TestCase
     }
 
     #[DataProvider('provideStartGreaterThanEnd')]
-    public function testDurationRejectsStartGreaterThanEnd(int $startSeconds, int $startNanoseconds, int $endSeconds, int $endNanoseconds): void
+    public function testDurationIgnoresStartGreaterThanEnd(int $startSeconds, int $startNanoseconds, int $endSeconds, int $endNanoseconds): void
     {
         $start = HRTime::fromSecondsAndNanoseconds(
             $startSeconds,
@@ -136,10 +136,10 @@ final class HRTimeTest extends TestCase
             $endNanoseconds,
         );
 
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Start needs to be smaller.');
+        $duration = $end->duration($start);
 
-        $end->duration($start);
+        $this->assertSame(0, $duration->seconds());
+        $this->assertSame(0, $duration->nanoseconds());
     }
 
     #[DataProvider('provideStartEndAndDuration')]

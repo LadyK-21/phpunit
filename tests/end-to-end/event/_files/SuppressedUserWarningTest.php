@@ -9,6 +9,8 @@
  */
 namespace PHPUnit\TestFixture\Event;
 
+use const E_USER_WARNING;
+use function error_get_last;
 use function trigger_error;
 use PHPUnit\Framework\TestCase;
 
@@ -19,5 +21,12 @@ final class SuppressedUserWarningTest extends TestCase
         $this->assertTrue(true);
 
         @trigger_error('message', E_USER_WARNING);
+    }
+
+    public function testSuppressedUserWarningErrorGetLast(): void
+    {
+        $this->assertNull(error_get_last());
+        @trigger_error('message', E_USER_WARNING);
+        $this->assertIsArray(error_get_last());
     }
 }

@@ -16,24 +16,15 @@ PHPUnit %s by Sebastian Bergmann and contributors.
 Runtime: %s
 Configuration: %s
 
-
 ##teamcity[testCount count='1' flowId='%d']
-
-##teamcity[testSuiteStarted name='%s/tests/end-to-end/logging/_files/teamcity-warning/phpunit.xml' flowId='%d']
-
+##teamcity[testSuiteStarted name='%s%etests%eend-to-end%elogging%e_files%eteamcity-warning%ephpunit.xml' flowId='%d']
 ##teamcity[testSuiteStarted name='default' flowId='%d']
-
-##teamcity[testSuiteStarted name='PHPUnit\TestFixture\Test' locationHint='php_qn://%s/teamcity-warning/tests/Test.php::\PHPUnit\TestFixture\Test' flowId='%d']
-
-##teamcity[testStarted name='testOne' locationHint='php_qn://%s/teamcity-warning/tests/Test.php::\PHPUnit\TestFixture\Test::testOne' flowId='%d']
-
+##teamcity[testSuiteStarted name='PHPUnit\TestFixture\Test' locationHint='php_qn://%s%eteamcity-warning%etests%eTest.php::\PHPUnit\TestFixture\Test' flowId='%d']
+##teamcity[testStarted name='testOne' locationHint='php_qn://%s%eteamcity-warning%etests%eTest.php::\PHPUnit\TestFixture\Test::testOne' flowId='%d']
 ##teamcity[testFinished name='testOne' duration='%s' flowId='%d']
-
 ##teamcity[testSuiteFinished name='PHPUnit\TestFixture\Test' flowId='%d']
-
 ##teamcity[testSuiteFinished name='default' flowId='%d']
-
-##teamcity[testSuiteFinished name='%s/tests/end-to-end/logging/_files/teamcity-warning/phpunit.xml' flowId='%d']
+##teamcity[testSuiteFinished name='%s%etests%eend-to-end%elogging%e_files%eteamcity-warning%ephpunit.xml' flowId='%d']
 Time: %s, Memory: %s
 
 There was 1 PHPUnit test runner warning:

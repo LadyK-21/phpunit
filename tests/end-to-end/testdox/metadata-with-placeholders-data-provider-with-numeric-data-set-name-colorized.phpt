@@ -4,6 +4,8 @@ TestDox: Default output; Data Provider with numeric data set name; TestDox metad
 <?php declare(strict_types=1);
 $_SERVER['argv'][] = '--do-not-cache-result';
 $_SERVER['argv'][] = '--no-configuration';
+$_SERVER['argv'][] = '--bootstrap';
+$_SERVER['argv'][] = __DIR__ . '/_files/bootstrap.php';
 $_SERVER['argv'][] = '--no-progress';
 $_SERVER['argv'][] = '--testdox';
 $_SERVER['argv'][] = '--colors=always';
@@ -25,7 +27,7 @@ Time: %s, Memory: %s
    [31m┐[0m
    [31m├[0m [41;37mFailed asserting that false is true.[0m
    [31m│[0m
-   [31m│[0m %s[22m_files[2m/[22mDataProviderWithNumericDataSetNameAndMetadataWithPlaceholdersTest.php[2m:[22m[34m%d[0m
+   [31m│[0m %s[22m_files[2m%e[22mDataProviderWithNumericDataSetNameAndMetadataWithPlaceholdersTest.php[2m:[22m[34m%d[0m
    [31m┴[0m
 
 [37;41mFAILURES![0m

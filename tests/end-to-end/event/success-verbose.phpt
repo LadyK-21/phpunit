@@ -1,10 +1,5 @@
 --TEST--
-The right events are emitted in the right order for a successful test (with telemetry information)
---SKIPIF--
-<?php declare(strict_types=1);
-if (DIRECTORY_SEPARATOR === '\\') {
-    print "skip: this test does not work on Windows / GitHub Actions\n";
-}
+The right events are emitted in the right order for a successful test with extended information
 --FILE--
 <?php declare(strict_types=1);
 $traceFile = tempnam(sys_get_temp_dir(), __FILE__);
@@ -26,15 +21,14 @@ unlink($traceFile);
 --EXPECTF--
 [%s:%s:%s.%s / %s:%s:%s.%s] [%s bytes] PHPUnit Started (PHPUnit %s using %s)
 [%s:%s:%s.%s / %s:%s:%s.%s] [%s bytes] Test Runner Configured
-[%s:%s:%s.%s / %s:%s:%s.%s] [%s bytes] Test Suite Loaded (1 test)
 [%s:%s:%s.%s / %s:%s:%s.%s] [%s bytes] Event Facade Sealed
+[%s:%s:%s.%s / %s:%s:%s.%s] [%s bytes] Test Suite Loaded (1 test)
 [%s:%s:%s.%s / %s:%s:%s.%s] [%s bytes] Test Runner Started
 [%s:%s:%s.%s / %s:%s:%s.%s] [%s bytes] Test Suite Sorted
 [%s:%s:%s.%s / %s:%s:%s.%s] [%s bytes] Test Runner Execution Started (1 test)
 [%s:%s:%s.%s / %s:%s:%s.%s] [%s bytes] Test Suite Started (PHPUnit\TestFixture\Event\SuccessTest, 1 test)
 [%s:%s:%s.%s / %s:%s:%s.%s] [%s bytes] Test Preparation Started (PHPUnit\TestFixture\Event\SuccessTest::testSuccess)
 [%s:%s:%s.%s / %s:%s:%s.%s] [%s bytes] Test Prepared (PHPUnit\TestFixture\Event\SuccessTest::testSuccess)
-[%s:%s:%s.%s / %s:%s:%s.%s] [%s bytes] Assertion Succeeded (Constraint: is true, Value: true)
 [%s:%s:%s.%s / %s:%s:%s.%s] [%s bytes] Test Passed (PHPUnit\TestFixture\Event\SuccessTest::testSuccess)
 [%s:%s:%s.%s / %s:%s:%s.%s] [%s bytes] Test Finished (PHPUnit\TestFixture\Event\SuccessTest::testSuccess)
 [%s:%s:%s.%s / %s:%s:%s.%s] [%s bytes] Test Suite Finished (PHPUnit\TestFixture\Event\SuccessTest, 1 test)

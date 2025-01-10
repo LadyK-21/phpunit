@@ -15,12 +15,12 @@ if (!version_compare(PHP_VERSION, PHP_VERSION, '=')) {
     die(1);
 }
 
-if (version_compare('8.1.0', PHP_VERSION, '>')) {
+if (version_compare('8.3.0', PHP_VERSION, '>')) {
     fwrite(
         STDERR,
         sprintf(
             'PHPUnit X.Y.Z by Sebastian Bergmann and contributors.' . PHP_EOL . PHP_EOL .
-            'This version of PHPUnit requires PHP >= 8.1.' . PHP_EOL .
+            'This version of PHPUnit requires PHP >= 8.3.' . PHP_EOL .
             'You are using PHP %s (%s).' . PHP_EOL,
             PHP_VERSION,
             PHP_BINARY
@@ -30,7 +30,7 @@ if (version_compare('8.1.0', PHP_VERSION, '>')) {
     die(1);
 }
 
-$requiredExtensions = ['dom', 'json', 'libxml', 'mbstring', 'tokenizer', 'xml', 'xmlwriter'];
+$requiredExtensions = ['ctype', 'dom', 'json', 'libxml', 'mbstring', 'tokenizer', 'xml', 'xmlwriter'];
 
 $unavailableExtensions = array_filter(
     $requiredExtensions,
@@ -61,9 +61,11 @@ if (__FILE__ === realpath($_SERVER['SCRIPT_NAME'])) {
     $execute = false;
 }
 
-$options = getopt('', array('manifest', 'sbom'));
+$options = getopt('', array('composer-lock', 'manifest', 'sbom'));
 
-if (isset($options['manifest'])) {
+if (isset($options['composer-lock'])) {
+    $printComposerLock = true;
+} elseif (isset($options['manifest'])) {
     $printManifest = true;
 } elseif (isset($options['sbom'])) {
     $printSbom = true;
@@ -99,6 +101,12 @@ foreach ([___CLASSLIST___] as $file) {
 require __PHPUNIT_PHAR_ROOT__ . '/phpunit/Framework/Assert/Functions.php';
 
 if ($execute) {
+    if (isset($printComposerLock)) {
+        print file_get_contents(__PHPUNIT_PHAR_ROOT__ . '/composer.lock');
+
+        exit;
+    }
+
     if (isset($printManifest)) {
         print file_get_contents(__PHPUNIT_PHAR_ROOT__ . '/manifest.txt');
 

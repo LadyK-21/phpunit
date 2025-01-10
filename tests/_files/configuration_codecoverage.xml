@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="../../phpunit.xsd">
-    <source>
+    <source baseline=".phpunit/baseline.xml" ignoreSelfDeprecations="true" ignoreDirectDeprecations="true" ignoreIndirectDeprecations="true">
         <include>
             <directory suffix=".php">/path/to/files</directory>
             <file>/path/to/file</file>
@@ -14,10 +14,14 @@
             <directory suffix=".php">/path/to/files</directory>
             <file>/path/to/file</file>
         </exclude>
+
+        <deprecationTrigger>
+            <function>PHPUnit\TestFixture\DeprecationTrigger\trigger_deprecation</function>
+            <method>PHPUnit\TestFixture\DeprecationTrigger\DeprecationTrigger::triggerDeprecation</method>
+        </deprecationTrigger>
     </source>
 
-    <coverage cacheDirectory="/tmp/cache"
-              pathCoverage="true"
+    <coverage pathCoverage="true"
               ignoreDeprecatedCodeUnits="true"
               disableCodeCoverageIgnore="true">
         <report>
