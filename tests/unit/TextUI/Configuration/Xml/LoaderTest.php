@@ -14,43 +14,44 @@ use const PHP_EOL;
 use const PHP_VERSION;
 use function file_put_contents;
 use function iterator_to_array;
+use function realpath;
 use function sys_get_temp_dir;
 use function uniqid;
 use function unlink;
-use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\CoversNamespace;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Medium;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Runner\TestSuiteSorter;
+use PHPUnit\TextUI\Configuration\Configuration;
 use SebastianBergmann\CodeCoverage\Report\Html\Colors;
 use SebastianBergmann\CodeCoverage\Report\Thresholds;
 
-#[CoversClass(Loader::class)]
+#[CoversNamespace('PHPUnit\TextUI\XmlConfiguration')]
 #[Medium]
 final class LoaderTest extends TestCase
 {
     public static function configurationRootOptionsProvider(): array
     {
         return [
-            'executionOrder default'                          => ['executionOrder', 'default', TestSuiteSorter::ORDER_DEFAULT],
-            'executionOrder random'                           => ['executionOrder', 'random', TestSuiteSorter::ORDER_RANDOMIZED],
-            'executionOrder reverse'                          => ['executionOrder', 'reverse', TestSuiteSorter::ORDER_REVERSED],
-            'executionOrder size'                             => ['executionOrder', 'size', TestSuiteSorter::ORDER_SIZE],
-            'cacheDirectory absolute path'                    => ['cacheDirectory', '/path/to/cache', '/path/to/cache'],
-            'cacheResult=false'                               => ['cacheResult', 'false', false],
-            'cacheResult=true'                                => ['cacheResult', 'true', true],
-            'columns'                                         => ['columns', 'max', 'max'],
-            'stopOnFailure'                                   => ['stopOnFailure', 'true', true],
-            'stopOnWarning'                                   => ['stopOnWarning', 'true', true],
-            'stopOnIncomplete'                                => ['stopOnIncomplete', 'true', true],
-            'stopOnRisky'                                     => ['stopOnRisky', 'true', true],
-            'stopOnSkipped'                                   => ['stopOnSkipped', 'true', true],
-            'failOnEmptyTestSuite'                            => ['failOnEmptyTestSuite', 'true', true],
-            'failOnWarning'                                   => ['failOnWarning', 'true', true],
-            'failOnRisky'                                     => ['failOnRisky', 'true', true],
-            'processIsolation'                                => ['processIsolation', 'true', true],
-            'reverseDefectList'                               => ['reverseDefectList', 'true', true],
-            'registerMockObjectsFromTestArgumentsRecursively' => ['registerMockObjectsFromTestArgumentsRecursively', 'true', true],
+            'executionOrder default'       => ['executionOrder', 'default', TestSuiteSorter::ORDER_DEFAULT],
+            'executionOrder random'        => ['executionOrder', 'random', TestSuiteSorter::ORDER_RANDOMIZED],
+            'executionOrder reverse'       => ['executionOrder', 'reverse', TestSuiteSorter::ORDER_REVERSED],
+            'executionOrder size'          => ['executionOrder', 'size', TestSuiteSorter::ORDER_SIZE],
+            'cacheDirectory absolute path' => ['cacheDirectory', '/path/to/cache', '/path/to/cache'],
+            'cacheResult=false'            => ['cacheResult', 'false', false],
+            'cacheResult=true'             => ['cacheResult', 'true', true],
+            'columns'                      => ['columns', 'max', 'max'],
+            'stopOnFailure'                => ['stopOnFailure', 'true', true],
+            'stopOnWarning'                => ['stopOnWarning', 'true', true],
+            'stopOnIncomplete'             => ['stopOnIncomplete', 'true', true],
+            'stopOnRisky'                  => ['stopOnRisky', 'true', true],
+            'stopOnSkipped'                => ['stopOnSkipped', 'true', true],
+            'failOnEmptyTestSuite'         => ['failOnEmptyTestSuite', 'true', true],
+            'failOnWarning'                => ['failOnWarning', 'true', true],
+            'failOnRisky'                  => ['failOnRisky', 'true', true],
+            'processIsolation'             => ['processIsolation', 'true', true],
+            'reverseDefectList'            => ['reverseDefectList', 'true', true],
         ];
     }
 
@@ -66,28 +67,28 @@ final class LoaderTest extends TestCase
     {
         $phpunit = $this->configuration('configuration.colors.true.xml')->phpunit();
 
-        $this->assertEquals(\PHPUnit\TextUI\Configuration\Configuration::COLOR_AUTO, $phpunit->colors());
+        $this->assertEquals(Configuration::COLOR_AUTO, $phpunit->colors());
     }
 
     public function testShouldReadColorsWhenFalseInConfigurationFile(): void
     {
         $phpunit = $this->configuration('configuration.colors.false.xml')->phpunit();
 
-        $this->assertEquals(\PHPUnit\TextUI\Configuration\Configuration::COLOR_NEVER, $phpunit->colors());
+        $this->assertEquals(Configuration::COLOR_NEVER, $phpunit->colors());
     }
 
     public function testShouldReadColorsWhenEmptyInConfigurationFile(): void
     {
         $phpunit = $this->configuration('configuration.colors.empty.xml')->phpunit();
 
-        $this->assertEquals(\PHPUnit\TextUI\Configuration\Configuration::COLOR_NEVER, $phpunit->colors());
+        $this->assertEquals(Configuration::COLOR_NEVER, $phpunit->colors());
     }
 
     public function testShouldReadColorsWhenInvalidInConfigurationFile(): void
     {
         $phpunit = $this->configuration('configuration.colors.invalid.xml')->phpunit();
 
-        $this->assertEquals(\PHPUnit\TextUI\Configuration\Configuration::COLOR_NEVER, $phpunit->colors());
+        $this->assertEquals(Configuration::COLOR_NEVER, $phpunit->colors());
     }
 
     public function testInvalidConfigurationGeneratesValidationErrors(): void
@@ -140,6 +141,9 @@ final class LoaderTest extends TestCase
     {
         $source = $this->configuration('configuration_codecoverage.xml')->source();
 
+        $this->assertTrue($source->hasBaseline());
+        $this->assertSame(realpath(__DIR__ . '/../../../../_files') . DIRECTORY_SEPARATOR . '.phpunit/baseline.xml', $source->baseline());
+
         $directory = iterator_to_array($source->includeDirectories(), false)[0];
 
         $this->assertSame('/path/to/files', $directory->path());
@@ -159,23 +163,32 @@ final class LoaderTest extends TestCase
 
         $file = iterator_to_array($source->excludeFiles(), false)[0];
         $this->assertSame('/path/to/file', $file->path());
+
+        $this->assertSame(
+            [
+                'functions' => [
+                    'PHPUnit\TestFixture\DeprecationTrigger\trigger_deprecation',
+                ],
+                'methods' => [
+                    'PHPUnit\TestFixture\DeprecationTrigger\DeprecationTrigger::triggerDeprecation',
+                ],
+            ],
+            $source->deprecationTriggers(),
+        );
+
+        $this->assertTrue($source->ignoreSelfDeprecations());
+        $this->assertTrue($source->ignoreDirectDeprecations());
+        $this->assertTrue($source->ignoreIndirectDeprecations());
     }
 
     public function testCodeCoverageConfigurationIsReadCorrectly(): void
     {
         $codeCoverage = $this->configuration('configuration_codecoverage.xml')->codeCoverage();
 
-        $this->assertSame('/tmp/cache', $codeCoverage->cacheDirectory()->path());
-
         $this->assertTrue($codeCoverage->pathCoverage());
         $this->assertTrue($codeCoverage->includeUncoveredFiles());
         $this->assertTrue($codeCoverage->ignoreDeprecatedCodeUnits());
         $this->assertTrue($codeCoverage->disableCodeCoverageIgnore());
-
-        $this->assertFalse($codeCoverage->directories()->notEmpty());
-        $this->assertFalse($codeCoverage->files()->notEmpty());
-        $this->assertFalse($codeCoverage->excludeDirectories()->notEmpty());
-        $this->assertFalse($codeCoverage->excludeFiles()->notEmpty());
 
         $this->assertTrue($codeCoverage->hasClover());
         $this->assertSame(TEST_FILES_PATH . 'clover.xml', $codeCoverage->clover()->target()->path());
@@ -344,22 +357,24 @@ final class LoaderTest extends TestCase
         $this->assertTrue($phpunit->resolveDependencies());
         $this->assertTrue($phpunit->controlGarbageCollector());
         $this->assertSame(1000, $phpunit->numberOfTestsBeforeGarbageCollection());
+        $this->assertSame(10, $phpunit->shortenArraysForExportThreshold());
     }
 
     public function test_TestDox_configuration_is_parsed_correctly(): void
     {
-        $this->assertTrue(
-            $this->configuration('configuration_testdox.xml')->phpunit()->testdoxPrinter(),
-        );
+        $configuration = $this->configuration('configuration_testdox.xml')->phpunit();
+
+        $this->assertTrue($configuration->testdoxPrinter());
+        $this->assertTrue($configuration->testdoxPrinterSummary());
     }
 
     public function testConfigurationForSingleTestSuiteCanBeLoaded(): void
     {
-        $testsuites = $this->configuration('configuration_testsuite.xml')->testSuite();
+        $testSuites = $this->configuration('configuration_testsuite.xml')->testSuite();
 
-        $this->assertCount(1, $testsuites);
+        $this->assertCount(1, $testSuites);
 
-        $first = $testsuites->asArray()[0];
+        $first = $testSuites->asArray()[0];
         $this->assertSame('first', $first->name());
         $this->assertCount(1, $first->directories());
         $this->assertSame(TEST_FILES_PATH . 'tests/first', $first->directories()->asArray()[0]->path());
@@ -373,11 +388,11 @@ final class LoaderTest extends TestCase
 
     public function testConfigurationForMultipleTestSuitesCanBeLoaded(): void
     {
-        $testsuites = $this->configuration('configuration_testsuites.xml')->testSuite();
+        $testSuites = $this->configuration('configuration_testsuites.xml')->testSuite();
 
-        $this->assertCount(2, $testsuites);
+        $this->assertCount(2, $testSuites);
 
-        $first = $testsuites->asArray()[0];
+        $first = $testSuites->asArray()[0];
         $this->assertSame('first', $first->name());
         $this->assertCount(1, $first->directories());
         $this->assertSame(TEST_FILES_PATH . 'tests/first', $first->directories()->asArray()[0]->path());
@@ -387,8 +402,9 @@ final class LoaderTest extends TestCase
         $this->assertSame('>=', $first->directories()->asArray()[0]->phpVersionOperator()->asString());
         $this->assertCount(0, $first->files());
         $this->assertCount(0, $first->exclude());
+        $this->assertSame(['foo'], $first->directories()->asArray()[0]->groups());
 
-        $second = $testsuites->asArray()[1];
+        $second = $testSuites->asArray()[1];
         $this->assertSame('second', $second->name());
         $this->assertSame(TEST_FILES_PATH . 'tests/second', $second->directories()->asArray()[0]->path());
         $this->assertSame('test', $second->directories()->asArray()[0]->prefix());
@@ -401,6 +417,8 @@ final class LoaderTest extends TestCase
         $this->assertSame('!=', $second->files()->asArray()[0]->phpVersionOperator()->asString());
         $this->assertCount(1, $second->exclude());
         $this->assertSame(TEST_FILES_PATH . 'tests/second/_files', $second->exclude()->asArray()[0]->path());
+        $this->assertSame(['bar'], $second->directories()->asArray()[0]->groups());
+        $this->assertSame(['baz'], $second->files()->asArray()[0]->groups());
     }
 
     private function configuration(string $filename): LoadedFromFileConfiguration

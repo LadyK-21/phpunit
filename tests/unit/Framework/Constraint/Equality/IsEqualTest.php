@@ -9,11 +9,15 @@
  */
 namespace PHPUnit\Framework\Constraint;
 
+use const PHP_EOL;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\TestFixture\EnumerationEquals\Example;
+use PHPUnit\TestFixture\EnumerationEquals\ExampleInt;
+use PHPUnit\TestFixture\EnumerationEquals\ExampleString;
 use stdClass;
 
 #[CoversClass(IsEqual::class)]
@@ -27,9 +31,9 @@ final class IsEqualTest extends TestCase
             [
                 true,
                 <<<'EOT'
-is equal to Array &%d (
-    0 => 'value'
-)
+is equal to Array &%d [
+    0 => 'value',
+]
 EOT,
                 '',
                 '',
@@ -41,7 +45,7 @@ EOT,
                 true,
                 <<<'EOT'
 is equal to stdClass Object #%d (
-    'foo' => 'bar'
+    'foo' => 'bar',
 )
 EOT,
                 '',
@@ -141,11 +145,38 @@ EOT,
             ],
 
             [
+                true,
+                'is equal to PHPUnit\TestFixture\EnumerationEquals\Example Enum %s (Foo)',
+                '',
+                '',
+                Example::Foo,
+                Example::Foo,
+            ],
+
+            [
+                true,
+                'is equal to PHPUnit\TestFixture\EnumerationEquals\ExampleString Enum %s (Foo, \'foo\')',
+                '',
+                '',
+                ExampleString::Foo,
+                ExampleString::Foo,
+            ],
+
+            [
+                true,
+                'is equal to PHPUnit\TestFixture\EnumerationEquals\ExampleInt Enum %s (Foo, 0)',
+                '',
+                '',
+                ExampleInt::Foo,
+                ExampleInt::Foo,
+            ],
+
+            [
                 false,
                 <<<'EOT'
-is equal to Array &%d (
-    0 => 'value'
-)
+is equal to Array &%d [
+    0 => 'value',
+]
 EOT,
                 'Failed asserting that two arrays are equal.',
                 <<<'EOT'
@@ -166,10 +197,10 @@ EOT,
             [
                 false,
                 <<<'EOT'
-is equal to Array &%d (
-    0 => 'value'
-    1 => 'another-value'
-)
+is equal to Array &%d [
+    0 => 'value',
+    1 => 'another-value',
+]
 EOT,
                 'Failed asserting that two arrays are equal.',
                 <<<'EOT'
@@ -193,7 +224,7 @@ EOT,
                 false,
                 <<<'EOT'
 is equal to stdClass Object #%d (
-    'foo' => 'bar'
+    'foo' => 'bar',
 )
 EOT,
                 'Failed asserting that two objects are equal.',
@@ -289,8 +320,35 @@ Failed asserting that two strings are equal.
 +another-string'
 
 EOT,
-                'string' . PHP_EOL . 'string',
-                'another-string' . PHP_EOL . 'another-string',
+                "string\nstring",
+                "another-string\nanother-string",
+            ],
+
+            [
+                false,
+                'is equal to PHPUnit\TestFixture\EnumerationEquals\Example Enum %s (Foo)',
+                'Failed asserting that two values of enumeration PHPUnit\TestFixture\EnumerationEquals\Example are equal, Bar does not match expected Foo.',
+                'Failed asserting that two values of enumeration PHPUnit\TestFixture\EnumerationEquals\Example are equal, Bar does not match expected Foo.',
+                Example::Foo,
+                Example::Bar,
+            ],
+
+            [
+                false,
+                'is equal to PHPUnit\TestFixture\EnumerationEquals\ExampleString Enum %s (Foo, \'foo\')',
+                'Failed asserting that two values of enumeration PHPUnit\TestFixture\EnumerationEquals\ExampleString are equal, Bar does not match expected Foo.',
+                'Failed asserting that two values of enumeration PHPUnit\TestFixture\EnumerationEquals\ExampleString are equal, Bar does not match expected Foo.',
+                ExampleString::Foo,
+                ExampleString::Bar,
+            ],
+
+            [
+                false,
+                'is equal to PHPUnit\TestFixture\EnumerationEquals\ExampleInt Enum %s (Foo, 0)',
+                'Failed asserting that two values of enumeration PHPUnit\TestFixture\EnumerationEquals\ExampleInt are equal, Bar does not match expected Foo.',
+                'Failed asserting that two values of enumeration PHPUnit\TestFixture\EnumerationEquals\ExampleInt are equal, Bar does not match expected Foo.',
+                ExampleInt::Foo,
+                ExampleInt::Bar,
             ],
         ];
     }
@@ -323,14 +381,7 @@ EOT,
     {
         $constraint = new IsEqual($expected);
 
-        $this->assertStringMatchesFormat($constraintAsString, $constraint->toString());
-    }
-
-    public function testCanBeRepresentedAsStringWhenDeltaIsUsed(): void
-    {
-        $constraint = new IsEqual(0.0, 0.1);
-
-        $this->assertSame('is equal to 0.0 with delta <0.100000>', $constraint->toString());
+        $this->assertStringMatchesFormat($constraintAsString, $constraint->toString(true));
     }
 
     public function testIsCountable(): void

@@ -13,8 +13,11 @@ use function array_flip;
 use function array_key_exists;
 use function array_map;
 use function array_merge;
+use function array_pop;
+use function assert;
 use function count;
 use function is_string;
+use function range;
 use function strtolower;
 use PHPUnit\Framework\Constraint\Constraint;
 use PHPUnit\Framework\InvalidArgumentException;
@@ -28,6 +31,7 @@ use PHPUnit\Framework\MockObject\MethodNameAlreadyConfiguredException;
 use PHPUnit\Framework\MockObject\MethodNameNotConfiguredException;
 use PHPUnit\Framework\MockObject\MethodParametersAlreadyConfiguredException;
 use PHPUnit\Framework\MockObject\Rule;
+use PHPUnit\Framework\MockObject\Runtime\PropertyHook;
 use PHPUnit\Framework\MockObject\Stub\ConsecutiveCalls;
 use PHPUnit\Framework\MockObject\Stub\Exception;
 use PHPUnit\Framework\MockObject\Stub\ReturnArgument;
@@ -48,12 +52,12 @@ final class InvocationMocker implements InvocationStubber, MethodNameMatch
     private readonly Matcher $matcher;
 
     /**
-     * @psalm-var list<ConfigurableMethod>
+     * @var list<ConfigurableMethod>
      */
     private readonly array $configurableMethods;
 
     /**
-     * @psalm-var ?array<string, int>
+     * @var ?array<string, int>
      */
     private ?array $configurableMethodNames = null;
 
@@ -117,7 +121,45 @@ final class InvocationMocker implements InvocationStubber, MethodNameMatch
 
     public function willReturnMap(array $valueMap): self
     {
-        $stub = new ReturnValueMap($valueMap);
+        $method = $this->configuredMethod();
+
+        assert($method instanceof ConfigurableMethod);
+
+        $numberOfParameters = $method->numberOfParameters();
+        $defaultValues      = $method->defaultParameterValues();
+        $hasDefaultValues   = !empty($defaultValues);
+
+        $_valueMap = [];
+
+        foreach ($valueMap as $mapping) {
+            $numberOfConfiguredParameters = count($mapping) - 1;
+
+            if ($numberOfConfiguredParameters === $numberOfParameters || !$hasDefaultValues) {
+                $_valueMap[] = $mapping;
+
+                continue;
+            }
+
+            $_mapping    = [];
+            $returnValue = array_pop($mapping);
+
+            foreach (range(0, $numberOfParameters - 1) as $i) {
+                if (isset($mapping[$i])) {
+                    $_mapping[] = $mapping[$i];
+
+                    continue;
+                }
+
+                if (isset($defaultValues[$i])) {
+                    $_mapping[] = $defaultValues[$i];
+                }
+            }
+
+            $_mapping[]  = $returnValue;
+            $_valueMap[] = $_mapping;
+        }
+
+        $stub = new ReturnValueMap($_valueMap);
 
         return $this->will($stub);
     }
@@ -205,10 +247,14 @@ final class InvocationMocker implements InvocationStubber, MethodNameMatch
      *
      * @return $this
      */
-    public function method(Constraint|string $constraint): self
+    public function method(Constraint|PropertyHook|string $constraint): self
     {
         if ($this->matcher->hasMethodNameRule()) {
             throw new MethodNameAlreadyConfiguredException;
+        }
+
+        if ($constraint instanceof PropertyHook) {
+            $constraint = $constraint->asString();
         }
 
         if (is_string($constraint)) {
@@ -262,6 +308,8 @@ final class InvocationMocker implements InvocationStubber, MethodNameMatch
     }
 
     /**
+     * @param array<mixed> $values
+     *
      * @throws IncompatibleReturnValueException
      */
     private function ensureTypeOfReturnValues(array $values): void

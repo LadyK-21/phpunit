@@ -9,6 +9,7 @@
  */
 namespace PHPUnit\Framework\Constraint;
 
+use const PHP_EOL;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
@@ -27,9 +28,9 @@ final class IsEqualCanonicalizingTest extends TestCase
             [
                 true,
                 <<<'EOT'
-is equal to Array &%d (
-    0 => 'value'
-)
+is equal to Array &%d [
+    0 => 'value',
+]
 EOT,
                 '',
                 '',
@@ -40,10 +41,10 @@ EOT,
             [
                 true,
                 <<<'EOT'
-is equal to Array &%d (
-    0 => 'value'
-    1 => 'another-value'
-)
+is equal to Array &%d [
+    0 => 'value',
+    1 => 'another-value',
+]
 EOT,
                 '',
                 '',
@@ -55,7 +56,7 @@ EOT,
                 true,
                 <<<'EOT'
 is equal to stdClass Object #%d (
-    'foo' => 'bar'
+    'foo' => 'bar',
 )
 EOT,
                 '',
@@ -157,9 +158,9 @@ EOT,
             [
                 false,
                 <<<'EOT'
-is equal to Array &%d (
-    0 => 'value'
-)
+is equal to Array &%d [
+    0 => 'value',
+]
 EOT,
                 'Failed asserting that two arrays are equal.',
                 <<<'EOT'
@@ -181,7 +182,7 @@ EOT,
                 false,
                 <<<'EOT'
 is equal to stdClass Object #%d (
-    'foo' => 'bar'
+    'foo' => 'bar',
 )
 EOT,
                 'Failed asserting that two objects are equal.',
@@ -277,8 +278,8 @@ Failed asserting that two strings are equal.
 +another-string'
 
 EOT,
-                'string' . PHP_EOL . 'string',
-                'another-string' . PHP_EOL . 'another-string',
+                "string\nstring",
+                "another-string\nanother-string",
             ],
         ];
     }
@@ -311,7 +312,7 @@ EOT,
     {
         $constraint = new IsEqualCanonicalizing($expected);
 
-        $this->assertStringMatchesFormat($constraintAsString, $constraint->toString());
+        $this->assertStringMatchesFormat($constraintAsString, $constraint->toString(true));
     }
 
     public function testIsCountable(): void

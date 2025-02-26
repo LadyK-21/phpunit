@@ -10,11 +10,13 @@
 namespace PHPUnit\Metadata;
 
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Metadata\Version\ComparisonRequirement;
 use PHPUnit\Util\VersionComparisonOperator;
+use stdClass;
 
 #[CoversClass(MetadataCollection::class)]
 #[CoversClass(MetadataCollectionIterator::class)]
@@ -24,19 +26,16 @@ use PHPUnit\Util\VersionComparisonOperator;
 #[UsesClass(BackupStaticProperties::class)]
 #[UsesClass(Before::class)]
 #[UsesClass(BeforeClass::class)]
-#[UsesClass(Covers::class)]
-#[UsesClass(\PHPUnit\Metadata\CoversClass::class)]
-#[UsesClass(CoversDefaultClass::class)]
+#[UsesClass(CoversClass::class)]
 #[UsesClass(CoversFunction::class)]
+#[UsesClass(CoversMethod::class)]
 #[UsesClass(CoversNothing::class)]
 #[UsesClass(DataProvider::class)]
 #[UsesClass(DependsOnClass::class)]
 #[UsesClass(DependsOnMethod::class)]
+#[UsesClass(DisableReturnValueGenerationForTestDoubles::class)]
 #[UsesClass(DoesNotPerformAssertions::class)]
 #[UsesClass(Group::class)]
-#[UsesClass(IgnoreClassForCodeCoverage::class)]
-#[UsesClass(IgnoreMethodForCodeCoverage::class)]
-#[UsesClass(IgnoreFunctionForCodeCoverage::class)]
 #[UsesClass(Metadata::class)]
 #[UsesClass(PostCondition::class)]
 #[UsesClass(PreCondition::class)]
@@ -48,6 +47,8 @@ use PHPUnit\Util\VersionComparisonOperator;
 #[UsesClass(RequiresPhp::class)]
 #[UsesClass(RequiresPhpExtension::class)]
 #[UsesClass(RequiresPhpunit::class)]
+#[UsesClass(RequiresPhpunitExtension::class)]
+#[UsesClass(RequiresEnvironmentVariable::class)]
 #[UsesClass(RequiresSetting::class)]
 #[UsesClass(RunClassInSeparateProcess::class)]
 #[UsesClass(RunInSeparateProcess::class)]
@@ -55,11 +56,10 @@ use PHPUnit\Util\VersionComparisonOperator;
 #[UsesClass(Test::class)]
 #[UsesClass(TestDox::class)]
 #[UsesClass(TestWith::class)]
-#[UsesClass(Uses::class)]
-#[UsesClass(\PHPUnit\Metadata\UsesClass::class)]
-#[UsesClass(UsesDefaultClass::class)]
+#[UsesClass(UsesClass::class)]
 #[UsesClass(UsesFunction::class)]
 #[Small]
+#[Group('metadata')]
 final class MetadataCollectionTest extends TestCase
 {
     public function testCanBeEmpty(): void
@@ -103,8 +103,8 @@ final class MetadataCollectionTest extends TestCase
 
     public function testCanBeMerged(): void
     {
-        $a = MetadataCollection::fromArray([Metadata::before()]);
-        $b = MetadataCollection::fromArray([Metadata::after()]);
+        $a = MetadataCollection::fromArray([Metadata::before(0)]);
+        $b = MetadataCollection::fromArray([Metadata::after(0)]);
         $c = $a->mergeWith($b);
 
         $this->assertCount(2, $c);
@@ -116,8 +116,8 @@ final class MetadataCollectionTest extends TestCase
     {
         $collection = MetadataCollection::fromArray(
             [
-                Metadata::coversOnClass(''),
-                Metadata::coversOnMethod(''),
+                Metadata::coversClass(''),
+                Metadata::ignoreDeprecationsOnMethod(),
             ],
         );
 
@@ -178,12 +178,12 @@ final class MetadataCollectionTest extends TestCase
         $this->assertTrue($collection->asArray()[0]->isBefore());
     }
 
-    public function test_Can_be_filtered_for_Covers(): void
+    public function test_Can_be_filtered_for_CoversNamespace(): void
     {
-        $collection = $this->collectionWithOneOfEach()->isCovers();
+        $collection = $this->collectionWithOneOfEach()->isCoversNamespace();
 
         $this->assertCount(1, $collection);
-        $this->assertTrue($collection->asArray()[0]->isCovers());
+        $this->assertTrue($collection->asArray()[0]->isCoversNamespace());
     }
 
     public function test_Can_be_filtered_for_CoversClass(): void
@@ -194,12 +194,28 @@ final class MetadataCollectionTest extends TestCase
         $this->assertTrue($collection->asArray()[0]->isCoversClass());
     }
 
-    public function test_Can_be_filtered_for_CoversDefaultClass(): void
+    public function test_Can_be_filtered_for_CoversClassesThatExtendClass(): void
     {
-        $collection = $this->collectionWithOneOfEach()->isCoversDefaultClass();
+        $collection = $this->collectionWithOneOfEach()->isCoversClassesThatExtendClass();
 
         $this->assertCount(1, $collection);
-        $this->assertTrue($collection->asArray()[0]->isCoversDefaultClass());
+        $this->assertTrue($collection->asArray()[0]->isCoversClassesThatExtendClass());
+    }
+
+    public function test_Can_be_filtered_for_CoversClassesThatImplementInterface(): void
+    {
+        $collection = $this->collectionWithOneOfEach()->isCoversClassesThatImplementInterface();
+
+        $this->assertCount(1, $collection);
+        $this->assertTrue($collection->asArray()[0]->isCoversClassesThatImplementInterface());
+    }
+
+    public function test_Can_be_filtered_for_CoversTrait(): void
+    {
+        $collection = $this->collectionWithOneOfEach()->isCoversTrait();
+
+        $this->assertCount(1, $collection);
+        $this->assertTrue($collection->asArray()[0]->isCoversTrait());
     }
 
     public function test_Can_be_filtered_for_CoversFunction(): void
@@ -208,6 +224,14 @@ final class MetadataCollectionTest extends TestCase
 
         $this->assertCount(1, $collection);
         $this->assertTrue($collection->asArray()[0]->isCoversFunction());
+    }
+
+    public function test_Can_be_filtered_for_CoversMethod(): void
+    {
+        $collection = $this->collectionWithOneOfEach()->isCoversMethod();
+
+        $this->assertCount(1, $collection);
+        $this->assertTrue($collection->asArray()[0]->isCoversMethod());
     }
 
     public function test_Can_be_filtered_for_CoversNothing(): void
@@ -251,6 +275,14 @@ final class MetadataCollectionTest extends TestCase
         $this->assertTrue($collection->asArray()[0]->isDependsOnMethod());
     }
 
+    public function test_Can_be_filtered_for_DisableReturnValueGenerationForTestDoubles(): void
+    {
+        $collection = $this->collectionWithOneOfEach()->isDisableReturnValueGenerationForTestDoubles();
+
+        $this->assertCount(1, $collection);
+        $this->assertTrue($collection->asArray()[0]->isDisableReturnValueGenerationForTestDoubles());
+    }
+
     public function test_Can_be_filtered_for_DoesNotPerformAssertions(): void
     {
         $collection = $this->collectionWithOneOfEach()->isDoesNotPerformAssertions();
@@ -283,28 +315,20 @@ final class MetadataCollectionTest extends TestCase
         $this->assertTrue($collection->asArray()[0]->isGroup());
     }
 
-    public function test_Can_be_filtered_for_IgnoreClassForCodeCoverage(): void
+    public function test_Can_be_filtered_for_IgnoreDeprecations(): void
     {
-        $collection = $this->collectionWithOneOfEach()->isIgnoreClassForCodeCoverage();
+        $collection = $this->collectionWithOneOfEach()->isIgnoreDeprecations();
 
         $this->assertCount(1, $collection);
-        $this->assertTrue($collection->asArray()[0]->isIgnoreClassForCodeCoverage());
+        $this->assertTrue($collection->asArray()[0]->isIgnoreDeprecations());
     }
 
-    public function test_Can_be_filtered_for_IgnoreMethodForCodeCoverage(): void
+    public function test_Can_be_filtered_for_IgnorePhpunitDeprecations(): void
     {
-        $collection = $this->collectionWithOneOfEach()->isIgnoreMethodForCodeCoverage();
+        $collection = $this->collectionWithOneOfEach()->isIgnorePhpunitDeprecations();
 
         $this->assertCount(1, $collection);
-        $this->assertTrue($collection->asArray()[0]->isIgnoreMethodForCodeCoverage());
-    }
-
-    public function test_Can_be_filtered_for_IgnoreFunctionForCodeCoverage(): void
-    {
-        $collection = $this->collectionWithOneOfEach()->isIgnoreFunctionForCodeCoverage();
-
-        $this->assertCount(1, $collection);
-        $this->assertTrue($collection->asArray()[0]->isIgnoreFunctionForCodeCoverage());
+        $this->assertTrue($collection->asArray()[0]->isIgnorePhpunitDeprecations());
     }
 
     public function test_Can_be_filtered_for_PostCondition(): void
@@ -387,6 +411,22 @@ final class MetadataCollectionTest extends TestCase
         $this->assertTrue($collection->asArray()[0]->isRequiresPhpunit());
     }
 
+    public function test_Can_be_filtered_for_RequiresPhpunitExtension(): void
+    {
+        $collection = $this->collectionWithOneOfEach()->isRequiresPhpunitExtension();
+
+        $this->assertCount(1, $collection);
+        $this->assertTrue($collection->asArray()[0]->isRequiresPhpunitExtension());
+    }
+
+    public function test_Can_be_filtered_for_RequiresEnvironmentVariable(): void
+    {
+        $collection = $this->collectionWithOneOfEach()->isRequiresEnvironmentVariable();
+
+        $this->assertCount(1, $collection);
+        $this->assertTrue($collection->asArray()[0]->isRequiresEnvironmentVariable());
+    }
+
     public function test_Can_be_filtered_for_RequiresSetting(): void
     {
         $collection = $this->collectionWithOneOfEach()->isRequiresSetting();
@@ -443,12 +483,12 @@ final class MetadataCollectionTest extends TestCase
         $this->assertTrue($collection->asArray()[0]->isTestWith());
     }
 
-    public function test_Can_be_filtered_for_Uses(): void
+    public function test_Can_be_filtered_for_UsesNamespace(): void
     {
-        $collection = $this->collectionWithOneOfEach()->isUses();
+        $collection = $this->collectionWithOneOfEach()->isUsesNamespace();
 
         $this->assertCount(1, $collection);
-        $this->assertTrue($collection->asArray()[0]->isUses());
+        $this->assertTrue($collection->asArray()[0]->isUsesNamespace());
     }
 
     public function test_Can_be_filtered_for_UsesClass(): void
@@ -459,12 +499,28 @@ final class MetadataCollectionTest extends TestCase
         $this->assertTrue($collection->asArray()[0]->isUsesClass());
     }
 
-    public function test_Can_be_filtered_for_UsesDefaultClass(): void
+    public function test_Can_be_filtered_for_UsesClassesThatExtendClass(): void
     {
-        $collection = $this->collectionWithOneOfEach()->isUsesDefaultClass();
+        $collection = $this->collectionWithOneOfEach()->isUsesClassesThatExtendClass();
 
         $this->assertCount(1, $collection);
-        $this->assertTrue($collection->asArray()[0]->isUsesDefaultClass());
+        $this->assertTrue($collection->asArray()[0]->isUsesClassesThatExtendClass());
+    }
+
+    public function test_Can_be_filtered_for_UsesClassesThatImplementInterface(): void
+    {
+        $collection = $this->collectionWithOneOfEach()->isUsesClassesThatImplementInterface();
+
+        $this->assertCount(1, $collection);
+        $this->assertTrue($collection->asArray()[0]->isUsesClassesThatImplementInterface());
+    }
+
+    public function test_Can_be_filtered_for_UsesTrait(): void
+    {
+        $collection = $this->collectionWithOneOfEach()->isUsesTrait();
+
+        $this->assertCount(1, $collection);
+        $this->assertTrue($collection->asArray()[0]->isUsesTrait());
     }
 
     public function test_Can_be_filtered_for_UsesFunction(): void
@@ -473,6 +529,14 @@ final class MetadataCollectionTest extends TestCase
 
         $this->assertCount(1, $collection);
         $this->assertTrue($collection->asArray()[0]->isUsesFunction());
+    }
+
+    public function test_Can_be_filtered_for_UsesMethod(): void
+    {
+        $collection = $this->collectionWithOneOfEach()->isUsesMethod();
+
+        $this->assertCount(1, $collection);
+        $this->assertTrue($collection->asArray()[0]->isUsesMethod());
     }
 
     public function test_Can_be_filtered_for_WithoutErrorHandler(): void
@@ -487,29 +551,32 @@ final class MetadataCollectionTest extends TestCase
     {
         return MetadataCollection::fromArray(
             [
-                Metadata::afterClass(),
-                Metadata::after(),
+                Metadata::afterClass(0),
+                Metadata::after(0),
                 Metadata::backupGlobalsOnClass(true),
                 Metadata::backupStaticPropertiesOnClass(true),
-                Metadata::beforeClass(),
-                Metadata::before(),
-                Metadata::coversOnClass(''),
+                Metadata::beforeClass(0),
+                Metadata::before(0),
+                Metadata::coversNamespace(''),
                 Metadata::coversClass(''),
-                Metadata::coversDefaultClass(''),
+                Metadata::coversClassesThatExtendClass(''),
+                Metadata::coversClassesThatImplementInterface(''),
+                Metadata::coversTrait(''),
                 Metadata::coversFunction(''),
+                Metadata::coversMethod('', ''),
                 Metadata::coversNothingOnClass(),
                 Metadata::dataProvider('', ''),
                 Metadata::dependsOnClass('', false, false),
                 Metadata::dependsOnMethod('', '', false, false),
+                Metadata::disableReturnValueGenerationForTestDoubles(),
                 Metadata::doesNotPerformAssertionsOnClass(),
                 Metadata::excludeGlobalVariableFromBackupOnClass(''),
                 Metadata::excludeStaticPropertyFromBackupOnClass('', ''),
                 Metadata::groupOnClass(''),
-                Metadata::ignoreClassForCodeCoverage(''),
-                Metadata::ignoreMethodForCodeCoverage('', ''),
-                Metadata::ignoreFunctionForCodeCoverage(''),
-                Metadata::postCondition(),
-                Metadata::preCondition(),
+                Metadata::ignoreDeprecationsOnClass(),
+                Metadata::ignorePhpunitDeprecationsOnClass(),
+                Metadata::postCondition(0),
+                Metadata::preCondition(0),
                 Metadata::preserveGlobalStateOnClass(true),
                 Metadata::requiresMethodOnClass('', ''),
                 Metadata::requiresFunctionOnClass(''),
@@ -528,6 +595,8 @@ final class MetadataCollectionTest extends TestCase
                         new VersionComparisonOperator('>='),
                     ),
                 ),
+                Metadata::requiresPhpunitExtensionOnClass(stdClass::class),
+                Metadata::requiresEnvironmentVariableOnClass('foo', 'bar'),
                 Metadata::requiresSettingOnClass('foo', 'bar'),
                 Metadata::runClassInSeparateProcess(),
                 Metadata::runInSeparateProcess(),
@@ -535,10 +604,13 @@ final class MetadataCollectionTest extends TestCase
                 Metadata::testDoxOnClass(''),
                 Metadata::test(),
                 Metadata::testWith([]),
-                Metadata::usesOnClass(''),
+                Metadata::usesNamespace(''),
                 Metadata::usesClass(''),
-                Metadata::usesDefaultClass(''),
+                Metadata::usesClassesThatExtendClass(''),
+                Metadata::usesClassesThatImplementInterface(''),
+                Metadata::usesTrait(''),
                 Metadata::usesFunction(''),
+                Metadata::usesMethod('', ''),
                 Metadata::withoutErrorHandler(),
             ],
         );

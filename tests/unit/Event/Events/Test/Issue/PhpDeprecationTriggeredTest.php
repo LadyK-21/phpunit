@@ -11,6 +11,7 @@ namespace PHPUnit\Event\Test;
 
 use const PHP_EOL;
 use PHPUnit\Event\AbstractEventTestCase;
+use PHPUnit\Event\Code\IssueTrigger\IssueTrigger;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Small;
 
@@ -20,12 +21,15 @@ final class PhpDeprecationTriggeredTest extends AbstractEventTestCase
 {
     public function testConstructorSetsValues(): void
     {
-        $telemetryInfo = $this->telemetryInfo();
-        $test          = $this->testValueObject();
-        $message       = 'message';
-        $file          = 'file';
-        $line          = 1;
-        $suppressed    = false;
+        $telemetryInfo     = $this->telemetryInfo();
+        $test              = $this->testValueObject();
+        $message           = 'message';
+        $file              = 'file';
+        $line              = 1;
+        $suppressed        = false;
+        $ignoredByBaseline = false;
+        $ignoredByTest     = false;
+        $trigger           = IssueTrigger::unknown();
 
         $event = new PhpDeprecationTriggered(
             $telemetryInfo,
@@ -34,6 +38,9 @@ final class PhpDeprecationTriggeredTest extends AbstractEventTestCase
             $file,
             $line,
             $suppressed,
+            $ignoredByBaseline,
+            $ignoredByTest,
+            $trigger,
         );
 
         $this->assertSame($telemetryInfo, $event->telemetryInfo());
@@ -42,6 +49,63 @@ final class PhpDeprecationTriggeredTest extends AbstractEventTestCase
         $this->assertSame($file, $event->file());
         $this->assertSame($line, $event->line());
         $this->assertSame($suppressed, $event->wasSuppressed());
-        $this->assertSame('Test Triggered PHP Deprecation (FooTest::testBar)' . PHP_EOL . 'message', $event->asString());
+        $this->assertSame($ignoredByBaseline, $event->ignoredByBaseline());
+        $this->assertSame($ignoredByTest, $event->ignoredByTest());
+        $this->assertSame('Test Triggered PHP Deprecation (FooTest::testBar, unknown if issue was triggered in first-party code or third-party code) in file:1' . PHP_EOL . 'message', $event->asString());
+        $this->assertSame($trigger, $event->trigger());
+    }
+
+    public function testCanBeIgnoredByBaseline(): void
+    {
+        $event = new PhpDeprecationTriggered(
+            $this->telemetryInfo(),
+            $this->testValueObject(),
+            'message',
+            'file',
+            1,
+            false,
+            true,
+            false,
+            IssueTrigger::unknown(),
+        );
+
+        $this->assertTrue($event->ignoredByBaseline());
+        $this->assertSame('Test Triggered PHP Deprecation (FooTest::testBar, unknown if issue was triggered in first-party code or third-party code, ignored by baseline) in file:1' . PHP_EOL . 'message', $event->asString());
+    }
+
+    public function testCanBeIgnoredByTest(): void
+    {
+        $event = new PhpDeprecationTriggered(
+            $this->telemetryInfo(),
+            $this->testValueObject(),
+            'message',
+            'file',
+            1,
+            false,
+            false,
+            true,
+            IssueTrigger::unknown(),
+        );
+
+        $this->assertTrue($event->ignoredByTest());
+        $this->assertSame('Test Triggered PHP Deprecation (FooTest::testBar, unknown if issue was triggered in first-party code or third-party code, ignored by test) in file:1' . PHP_EOL . 'message', $event->asString());
+    }
+
+    public function testCanBeSuppressed(): void
+    {
+        $event = new PhpDeprecationTriggered(
+            $this->telemetryInfo(),
+            $this->testValueObject(),
+            'message',
+            'file',
+            1,
+            true,
+            false,
+            false,
+            IssueTrigger::unknown(),
+        );
+
+        $this->assertTrue($event->wasSuppressed());
+        $this->assertSame('Test Triggered PHP Deprecation (FooTest::testBar, unknown if issue was triggered in first-party code or third-party code, suppressed using operator) in file:1' . PHP_EOL . 'message', $event->asString());
     }
 }

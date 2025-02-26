@@ -12,6 +12,7 @@ namespace PHPUnit\Framework\Constraint;
 use function sprintf;
 use function trim;
 use PHPUnit\Framework\ExpectationFailedException;
+use PHPUnit\Util\Exporter;
 use SebastianBergmann\Comparator\ComparisonFailure;
 use SebastianBergmann\Comparator\Factory as ComparatorFactory;
 
@@ -41,7 +42,7 @@ final class IsEqualWithDelta extends Constraint
      *
      * @throws ExpectationFailedException
      */
-    public function evaluate(mixed $other, string $description = '', bool $returnResult = false): ?bool
+    public function evaluate(mixed $other, string $description = '', bool $returnResult = false): bool
     {
         // If $this->value and $other are identical, they are also equal.
         // This is the most common path and will allow us to skip
@@ -84,7 +85,7 @@ final class IsEqualWithDelta extends Constraint
     {
         return sprintf(
             'is equal to %s with delta <%F>',
-            $this->exporter()->export($this->value),
+            Exporter::export($this->value),
             $this->delta,
         );
     }

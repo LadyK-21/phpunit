@@ -12,31 +12,63 @@ namespace PHPUnit\Framework\MockObject;
 use SebastianBergmann\Type\Type;
 
 /**
+ * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
+ *
  * @internal This class is not covered by the backward compatibility promise for PHPUnit
  */
-final class ConfigurableMethod
+final readonly class ConfigurableMethod
 {
     /**
-     * @psalm-var non-empty-string
+     * @var non-empty-string
      */
-    private readonly string $name;
-    private readonly Type $returnType;
+    private string $name;
 
     /**
-     * @psalm-param non-empty-string $name
+     * @var array<int, mixed>
      */
-    public function __construct(string $name, Type $returnType)
+    private array $defaultParameterValues;
+
+    /**
+     * @var non-negative-int
+     */
+    private int $numberOfParameters;
+    private Type $returnType;
+
+    /**
+     * @param non-empty-string  $name
+     * @param array<int, mixed> $defaultParameterValues
+     * @param non-negative-int  $numberOfParameters
+     */
+    public function __construct(string $name, array $defaultParameterValues, int $numberOfParameters, Type $returnType)
     {
-        $this->name       = $name;
-        $this->returnType = $returnType;
+        $this->name                   = $name;
+        $this->defaultParameterValues = $defaultParameterValues;
+        $this->numberOfParameters     = $numberOfParameters;
+        $this->returnType             = $returnType;
     }
 
     /**
-     * @psalm-return non-empty-string
+     * @return non-empty-string
      */
     public function name(): string
     {
         return $this->name;
+    }
+
+    /**
+     * @return array<int, mixed>
+     */
+    public function defaultParameterValues(): array
+    {
+        return $this->defaultParameterValues;
+    }
+
+    /**
+     * @return non-negative-int
+     */
+    public function numberOfParameters(): int
+    {
+        return $this->numberOfParameters;
     }
 
     public function mayReturn(mixed $value): bool

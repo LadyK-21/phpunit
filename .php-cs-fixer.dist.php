@@ -14,8 +14,17 @@ $finder = PhpCsFixer\Finder::create()
     ->in(__DIR__ . '/tests/_files')
     ->in(__DIR__ . '/tests/end-to-end')
     ->in(__DIR__ . '/tests/unit')
+    // *WithPropertyWith*Hook.php use PHP 8.4 syntax that currently leads to PHP-CS-Fixer errors
+    ->notName('ExtendableClassWithPropertyWithGetHook.php')
+    ->notName('ExtendableClassWithPropertyWithSetHook.php')
+    ->notName('InterfaceWithPropertyWithGetHook.php')
+    ->notName('InterfaceWithPropertyWithSetHook.php')
+    // DeprecatedPhpFeatureTest.php must not use declare(strict_types=1);
     ->notName('DeprecatedPhpFeatureTest.php')
-    ->notName('ReadonlyClass.php')
+    // UseBaselineTest.php must not use declare(strict_types=1);
+    ->notName('UseBaselineTest.php')
+    // Issue5795Test.php contains required whitespace that would be cleaned up
+    ->notName('Issue5795Test.php')
     ->notName('*.phpt');
 
 $config = new PhpCsFixer\Config;
@@ -29,19 +38,15 @@ $config->setFinder($finder)
         'backtick_to_shell_exec' => true,
         'binary_operator_spaces' => [
             'operators' => [
-                '=' => 'align_single_space_minimal',
+                '*=' => 'align_single_space_minimal',
                 '+=' => 'align_single_space_minimal',
                 '-=' => 'align_single_space_minimal',
-                '*=' => 'align_single_space_minimal',
                 '/=' => 'align_single_space_minimal',
+                '=' => 'align_single_space_minimal',
                 '=>' => 'align_single_space_minimal',
             ],
         ],
         'blank_line_after_namespace' => true,
-        'blank_lines_before_namespace' => [
-            'max_line_breaks' => 1,
-            'min_line_breaks' => 0,
-        ],
         'blank_line_before_statement' => [
             'statements' => [
                 'break',
@@ -69,6 +74,14 @@ $config->setFinder($finder)
                 'yield_from',
             ],
         ],
+        'blank_lines_before_namespace' => [
+            'max_line_breaks' => 1,
+            'min_line_breaks' => 0,
+        ],
+        'braces_position' => [
+            'anonymous_classes_opening_brace' => 'next_line_unless_newline_at_signature_end',
+            'anonymous_functions_opening_brace' => 'next_line_unless_newline_at_signature_end',
+        ],
         'cast_spaces' => true,
         'class_attributes_separation' => [
             'elements' => [
@@ -82,15 +95,11 @@ $config->setFinder($finder)
         'combine_consecutive_issets' => true,
         'combine_consecutive_unsets' => true,
         'combine_nested_dirname' => true,
-        'compact_nullable_typehint' => true,
+        'compact_nullable_type_declaration' => true,
         'concat_space' => ['spacing' => 'one'],
         'constant_case' => true,
         'control_structure_braces' => true,
         'control_structure_continuation_position' => true,
-        'curly_braces_position' => [
-            'anonymous_functions_opening_brace' => 'next_line_unless_newline_at_signature_end',
-            'anonymous_classes_opening_brace' => 'next_line_unless_newline_at_signature_end',
-        ],
         'declare_equal_normalize' => ['space' => 'none'],
         'declare_parentheses' => true,
         'declare_strict_types' => true,
@@ -103,10 +112,9 @@ $config->setFinder($finder)
         'explicit_string_variable' => true,
         'fopen_flag_order' => true,
         'full_opening_tag' => true,
-        'fully_qualified_strict_types' => true,
+        'fully_qualified_strict_types' => ['import_symbols' => true],
         'function_declaration' => true,
         'function_to_constant' => true,
-        'function_typehint_space' => true,
         'get_class_to_class_keyword' => true,
         'global_namespace_import' => [
             'import_classes' => true,
@@ -140,17 +148,17 @@ $config->setFinder($finder)
         'modernize_types_casting' => true,
         'multiline_comment_opening_closing' => true,
         'multiline_whitespace_before_semicolons' => true,
-        'native_constant_invocation' => false,
+        'native_constant_invocation' => true,
         'native_function_casing' => false,
         'native_function_invocation' => [
             'include' => [
                 '@internal',
             ],
         ],
-        'native_function_type_declaration_casing' => true,
-        'new_with_braces' => [
-            'named_class' => false,
+        'native_type_declaration_casing' => true,
+        'new_with_parentheses' => [
             'anonymous_class' => false,
+            'named_class' => false,
         ],
         'no_alias_functions' => true,
         'no_alias_language_construct_call' => true,
@@ -163,7 +171,23 @@ $config->setFinder($finder)
         'no_empty_comment' => true,
         'no_empty_phpdoc' => true,
         'no_empty_statement' => true,
-        'no_extra_blank_lines' => true,
+        'no_extra_blank_lines' => [
+            'tokens' => [
+                'attribute',
+                'break',
+                'case',
+                'continue',
+                'curly_brace_block',
+                'default',
+                'extra',
+                'parenthesis_brace_block',
+                'return',
+                'square_brace_block',
+                'switch',
+                'throw',
+                'use',
+            ],
+        ],
         'no_homoglyph_names' => true,
         'no_leading_import_slash' => true,
         'no_leading_namespace_whitespace' => true,
@@ -185,8 +209,8 @@ $config->setFinder($finder)
         'no_trailing_whitespace' => true,
         'no_trailing_whitespace_in_comment' => true,
         'no_trailing_whitespace_in_string' => true,
+        'no_unneeded_braces' => true,
         'no_unneeded_control_parentheses' => true,
-        'no_unneeded_curly_braces' => true,
         'no_unneeded_final_method' => true,
         'no_unneeded_import_alias' => true,
         'no_unreachable_default_argument_value' => true,
@@ -202,6 +226,7 @@ $config->setFinder($finder)
         'no_whitespace_in_blank_line' => true,
         'non_printable_character' => true,
         'normalize_index_brace' => true,
+        'nullable_type_declaration_for_default_null_value' => true,
         'object_operator_without_whitespace' => true,
         'octal_notation' => true,
         'operator_linebreak' => [
@@ -344,5 +369,9 @@ $config->setFinder($finder)
         'void_return' => true,
         'whitespace_after_comma_in_array' => true,
     ]);
+
+$config->setCacheFile(__DIR__ . '/.php-cs-fixer.cache/' . json_decode((string) @file_get_contents('composer.json'), true)["extra"]["branch-alias"]["dev-main"] ?? 'unknown');
+
+$config->setParallelConfig(\PhpCsFixer\Runner\Parallel\ParallelConfigFactory::detect());
 
 return $config;

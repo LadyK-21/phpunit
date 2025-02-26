@@ -9,6 +9,7 @@
  */
 namespace PHPUnit\TextUI\Configuration;
 
+use const DIRECTORY_SEPARATOR;
 use function realpath;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -26,8 +27,10 @@ final class SourceFilterTest extends TestCase
         return [
             'file included using file' => [
                 true,
-                $fixtureDirectory . '/a/PrefixSuffix.php',
+                $fixtureDirectory . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'PrefixSuffix.php',
                 new Source(
+                    null,
+                    false,
                     FilterDirectoryCollection::fromArray([]),
                     FileCollection::fromArray(
                         [
@@ -43,6 +46,12 @@ final class SourceFilterTest extends TestCase
                     false,
                     false,
                     false,
+                    false,
+                    false,
+                    [
+                        'functions' => [],
+                        'methods'   => [],
+                    ],
                     false,
                     false,
                     false,
@@ -50,8 +59,10 @@ final class SourceFilterTest extends TestCase
             ],
             'file included using file, but excluded using directory' => [
                 false,
-                $fixtureDirectory . '/a/PrefixSuffix.php',
+                $fixtureDirectory . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'PrefixSuffix.php',
                 new Source(
+                    null,
+                    false,
                     FilterDirectoryCollection::fromArray([]),
                     FileCollection::fromArray(
                         [
@@ -75,6 +86,12 @@ final class SourceFilterTest extends TestCase
                     false,
                     false,
                     false,
+                    false,
+                    false,
+                    [
+                        'functions' => [],
+                        'methods'   => [],
+                    ],
                     false,
                     false,
                     false,
@@ -82,8 +99,10 @@ final class SourceFilterTest extends TestCase
             ],
             'file included using file, but excluded using file' => [
                 false,
-                $fixtureDirectory . '/a/PrefixSuffix.php',
+                $fixtureDirectory . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'PrefixSuffix.php',
                 new Source(
+                    null,
+                    false,
                     FilterDirectoryCollection::fromArray([]),
                     FileCollection::fromArray(
                         [
@@ -103,6 +122,12 @@ final class SourceFilterTest extends TestCase
                     false,
                     false,
                     false,
+                    false,
+                    false,
+                    [
+                        'functions' => [],
+                        'methods'   => [],
+                    ],
                     false,
                     false,
                     false,
@@ -110,8 +135,10 @@ final class SourceFilterTest extends TestCase
             ],
             'file included using directory' => [
                 true,
-                $fixtureDirectory . '/a/PrefixSuffix.php',
+                $fixtureDirectory . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'PrefixSuffix.php',
                 new Source(
+                    null,
+                    false,
                     FilterDirectoryCollection::fromArray(
                         [
                             new FilterDirectory(
@@ -133,13 +160,21 @@ final class SourceFilterTest extends TestCase
                     false,
                     false,
                     false,
+                    [
+                        'functions' => [],
+                        'methods'   => [],
+                    ],
+                    false,
+                    false,
                     false,
                 ),
             ],
             'file included using directory, but excluded using file' => [
                 false,
-                $fixtureDirectory . '/a/PrefixSuffix.php',
+                $fixtureDirectory . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'PrefixSuffix.php',
                 new Source(
+                    null,
+                    false,
                     FilterDirectoryCollection::fromArray(
                         [
                             new FilterDirectory(
@@ -165,13 +200,21 @@ final class SourceFilterTest extends TestCase
                     false,
                     false,
                     false,
+                    [
+                        'functions' => [],
+                        'methods'   => [],
+                    ],
+                    false,
+                    false,
                     false,
                 ),
             ],
             'file included using directory, but excluded using directory' => [
                 false,
-                $fixtureDirectory . '/a/PrefixSuffix.php',
+                $fixtureDirectory . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'PrefixSuffix.php',
                 new Source(
+                    null,
+                    false,
                     FilterDirectoryCollection::fromArray(
                         [
                             new FilterDirectory(
@@ -199,6 +242,12 @@ final class SourceFilterTest extends TestCase
                     false,
                     false,
                     false,
+                    false,
+                    false,
+                    [
+                        'functions' => [],
+                        'methods'   => [],
+                    ],
                     false,
                     false,
                     false,
@@ -210,6 +259,6 @@ final class SourceFilterTest extends TestCase
     #[DataProvider('provider')]
     public function testDeterminesWhetherFileIsIncluded(bool $expected, string $file, Source $source): void
     {
-        $this->assertSame($expected, (new SourceFilter)->includes($source, $file));
+        $this->assertSame($expected, (new SourceFilter((new SourceMapper)->map($source)))->includes($file));
     }
 }

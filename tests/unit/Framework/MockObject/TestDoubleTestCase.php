@@ -10,10 +10,19 @@
 namespace PHPUnit\Framework\MockObject;
 
 use Exception;
+use PHPUnit\Framework\Attributes\RequiresPhp;
 use PHPUnit\Framework\Attributes\TestDox;
+use PHPUnit\Framework\Attributes\Ticket;
+use PHPUnit\Framework\MockObject\Runtime\PropertyHook;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\TestFixture\MockObject\ExtendableClassCallingMethodInDestructor;
 use PHPUnit\TestFixture\MockObject\ExtendableClassWithCloneMethod;
+use PHPUnit\TestFixture\MockObject\ExtendableClassWithPropertyWithGetHook;
+use PHPUnit\TestFixture\MockObject\ExtendableReadonlyClassWithCloneMethod;
 use PHPUnit\TestFixture\MockObject\InterfaceWithMethodThatExpectsObject;
+use PHPUnit\TestFixture\MockObject\InterfaceWithMethodThatHasDefaultParameterValues;
+use PHPUnit\TestFixture\MockObject\InterfaceWithNeverReturningMethod;
+use PHPUnit\TestFixture\MockObject\InterfaceWithPropertyWithGetHook;
 use PHPUnit\TestFixture\MockObject\InterfaceWithReturnTypeDeclaration;
 use stdClass;
 
@@ -31,28 +40,6 @@ abstract class TestDoubleTestCase extends TestCase
         $double = $this->createTestDouble(InterfaceWithReturnTypeDeclaration::class);
 
         $this->assertFalse($double->doSomething());
-    }
-
-    #[TestDox('__toString() method returns empty string when return value generation is disabled and no return value is configured')]
-    final public function testToStringMethodReturnsEmptyStringWhenReturnValueGenerationIsDisabledAndNoReturnValueIsConfigured(): void
-    {
-        $double = $this->getMockBuilder(InterfaceWithReturnTypeDeclaration::class)
-            ->disableAutoReturnValueGeneration()
-            ->getMock();
-
-        $this->assertSame('', $double->__toString());
-    }
-
-    final public function testMethodDoesNotReturnValueWhenReturnValueGenerationIsDisabledAndNoReturnValueIsConfigured(): void
-    {
-        $double = $this->getMockBuilder(InterfaceWithReturnTypeDeclaration::class)
-            ->disableAutoReturnValueGeneration()
-            ->getMock();
-
-        $this->expectException(ReturnValueNotConfiguredException::class);
-        $this->expectExceptionMessage('No return value is configured for ' . InterfaceWithReturnTypeDeclaration::class . '::doSomething() and return value generation is disabled');
-
-        $double->doSomething();
     }
 
     final public function testMethodReturnsConfiguredValueWhenReturnValueIsConfigured(): void
@@ -82,19 +69,6 @@ abstract class TestDoubleTestCase extends TestCase
         $double->method('doSomething')->willReturnArgument(0);
 
         $this->assertSame($object, $double->doSomething($object));
-    }
-
-    public function testCloningOfObjectsPassedAsArgumentCanBeEnabled(): void
-    {
-        $object = new stdClass;
-
-        $double = $this->getMockBuilder(InterfaceWithMethodThatExpectsObject::class)
-            ->enableArgumentCloning()
-            ->getMock();
-
-        $double->method('doSomething')->willReturnArgument(0);
-
-        $this->assertNotSame($object, $double->doSomething($object));
     }
 
     final public function testMethodCanBeConfiguredToReturnOneOfItsArguments(): void
@@ -136,6 +110,26 @@ abstract class TestDoubleTestCase extends TestCase
         $this->assertSame(4, $double->doSomethingElse(3));
     }
 
+    final public function testMethodWithDefaultParameterValuesCanBeConfiguredToReturnValuesBasedOnArgumentMapping(): void
+    {
+        $double = $this->createTestDouble(InterfaceWithMethodThatHasDefaultParameterValues::class);
+
+        $double->method('doSomething')->willReturnMap([[1, 2, 3], [4, 5, 6]]);
+
+        $this->assertSame(3, $double->doSomething(1, 2));
+        $this->assertSame(6, $double->doSomething(4, 5));
+    }
+
+    final public function testMethodWithDefaultParameterValuesCanBeConfiguredToReturnValuesBasedOnArgumentMappingThatOmitsDefaultValues(): void
+    {
+        $double = $this->createTestDouble(InterfaceWithMethodThatHasDefaultParameterValues::class);
+
+        $double->method('doSomething')->willReturnMap([[1, 2], [3, 4]]);
+
+        $this->assertSame(2, $double->doSomething(1));
+        $this->assertSame(4, $double->doSomething(3));
+    }
+
     final public function testMethodCanBeConfiguredToReturnValuesUsingCallback(): void
     {
         $double = $this->createTestDouble(InterfaceWithReturnTypeDeclaration::class);
@@ -164,6 +158,21 @@ abstract class TestDoubleTestCase extends TestCase
         $this->assertTrue($double->doSomething());
         $this->assertFalse($double->doSomething());
         $this->assertTrue($double->doSomething());
+    }
+
+    final public function testMethodConfiguredToReturnDifferentValuesOnConsecutiveCallsCannotBeCalledMoreOftenThanReturnValuesHaveBeenConfigured(): void
+    {
+        $double = $this->createTestDouble(InterfaceWithReturnTypeDeclaration::class);
+
+        $double->method('doSomething')->willReturn(false, true);
+
+        $this->assertFalse($double->doSomething());
+        $this->assertTrue($double->doSomething());
+
+        $this->expectException(NoMoreReturnValuesConfiguredException::class);
+        $this->expectExceptionMessage('Only 2 return values have been configured for PHPUnit\TestFixture\MockObject\InterfaceWithReturnTypeDeclaration::doSomething()');
+
+        $double->doSomething();
     }
 
     final public function testMethodCanBeConfiguredToReturnDifferentValuesAndThrowExceptionsOnConsecutiveCalls(): void
@@ -203,31 +212,81 @@ abstract class TestDoubleTestCase extends TestCase
         $this->fail();
     }
 
+    final public function testMethodWithNeverReturnTypeDeclarationThrowsException(): void
+    {
+        $double = $this->createTestDouble(InterfaceWithNeverReturningMethod::class);
+
+        $this->expectException(NeverReturningMethodException::class);
+        $this->expectExceptionMessage('Method PHPUnit\TestFixture\MockObject\InterfaceWithNeverReturningMethod::m() is declared to never return');
+
+        $double->m();
+    }
+
     #[TestDox('Original __clone() method is not called by default when test double object is cloned')]
-    public function testOriginalCloneMethodIsNotCalledByDefaultWhenTestDoubleObjectIsCloned(): void
+    final public function testOriginalCloneMethodIsNotCalledByDefaultWhenTestDoubleObjectIsCloned(): void
     {
         $double = clone $this->createTestDouble(ExtendableClassWithCloneMethod::class);
 
-        $this->assertFalse($double->method());
+        $this->assertFalse($double->doSomething());
     }
 
-    #[TestDox('Original __clone() method can optionally be called when test double object is cloned')]
-    public function testOriginalCloneMethodCanOptionallyBeCalledWhenTestDoubleObjectIsCloned(): void
+    #[TestDox('Original __clone() method is not called by default when test double object is cloned (readonly class)')]
+    final public function testOriginalCloneMethodIsNotCalledByDefaultWhenTestDoubleObjectOfReadonlyClassIsCloned(): void
     {
-        $double = $this->getMockBuilder(ExtendableClassWithCloneMethod::class)->enableOriginalClone()->getMock();
+        $double = clone $this->createTestDouble(ExtendableReadonlyClassWithCloneMethod::class);
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionMessage(ExtendableClassWithCloneMethod::class . '::__clone');
+        $this->assertFalse($double->doSomething());
+    }
 
-        clone $double;
+    public function testMethodNameCanOnlyBeConfiguredOnce(): void
+    {
+        $double = $this->createTestDouble(InterfaceWithReturnTypeDeclaration::class);
+
+        $this->expectException(MethodNameAlreadyConfiguredException::class);
+
+        $double
+            ->method('doSomething')
+            ->method('doSomething')
+            ->willReturn(true);
+    }
+
+    #[Ticket('https://github.com/sebastianbergmann/phpunit/issues/5874')]
+    public function testDoubledMethodsCanBeCalledFromDestructorOnTestDoubleCreatedByTheReturnValueGenerator(): void
+    {
+        $double = $this->createTestDouble(ExtendableClassCallingMethodInDestructor::class);
+
+        $this->assertInstanceOf(
+            ExtendableClassCallingMethodInDestructor::class,
+            $double->doSomething(),
+        );
+    }
+
+    #[RequiresPhp('^8.4')]
+    public function testGetHookForPropertyOfInterfaceCanBeConfigured(): void
+    {
+        $double = $this->createTestDouble(InterfaceWithPropertyWithGetHook::class);
+
+        $double->method(PropertyHook::get('property'))->willReturn('value');
+
+        $this->assertSame('value', $double->property);
+    }
+
+    #[RequiresPhp('^8.4')]
+    public function testGetHookForPropertyOfExtendableClassCanBeConfigured(): void
+    {
+        $double = $this->createTestDouble(ExtendableClassWithPropertyWithGetHook::class);
+
+        $double->method(PropertyHook::get('property'))->willReturn('value');
+
+        $this->assertSame('value', $double->property);
     }
 
     /**
-     * @psalm-template RealInstanceType of object
+     * @template RealInstanceType of object
      *
-     * @psalm-param class-string<RealInstanceType> $type
+     * @param class-string<RealInstanceType> $type
      *
-     * @psalm-return (Stub|MockObject)&RealInstanceType
+     * @return (MockObject|Stub)&RealInstanceType
      */
     abstract protected function createTestDouble(string $type): object;
 }

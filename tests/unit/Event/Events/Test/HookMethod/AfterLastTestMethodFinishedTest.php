@@ -43,7 +43,7 @@ final class AfterLastTestMethodFinishedTest extends AbstractEventTestCase
             ...$this->calledMethods(),
         );
 
-        $this->assertSame(
+        $this->assertStringEqualsStringIgnoringLineEndings(
             <<<'EOT'
 After Last Test Method Finished:
 - HookClass::hookMethod
@@ -55,7 +55,7 @@ EOT
     }
 
     /**
-     * @psalm-return list<Code\ClassMethod>
+     * @return list<Code\ClassMethod>
      */
     private function calledMethods(): array
     {
