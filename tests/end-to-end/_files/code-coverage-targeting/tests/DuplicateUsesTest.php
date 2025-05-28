@@ -7,19 +7,15 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-namespace PHPUnit\TestFixture\SizeGroups;
+namespace PHPUnit\TestFixture\CodeCoverageTargeting\Warnings;
 
-use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
-#[Group('small')]
-#[Group('medium')]
-#[Group('large')]
-final class SizeGroupsTest extends TestCase
+#[UsesClass(SomeClass::class)]
+#[UsesClass(SomeClass::class)]
+final class DuplicateUsesTest extends TestCase
 {
-    #[Group('small')]
-    #[Group('medium')]
-    #[Group('large')]
     public function testOne(): void
     {
         $this->assertTrue(true);
