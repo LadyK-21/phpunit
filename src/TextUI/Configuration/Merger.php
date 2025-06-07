@@ -101,6 +101,12 @@ final readonly class Merger
             $disableCodeCoverageIgnore = $xmlConfiguration->codeCoverage()->disableCodeCoverageIgnore();
         }
 
+        if ($cliConfiguration->hasFailOnAllIssues()) {
+            $failOnAllIssues = $cliConfiguration->failOnAllIssues();
+        } else {
+            $failOnAllIssues = $xmlConfiguration->phpunit()->failOnAllIssues();
+        }
+
         if ($cliConfiguration->hasFailOnDeprecation()) {
             $failOnDeprecation = $cliConfiguration->failOnDeprecation();
         } else {
@@ -293,6 +299,7 @@ final readonly class Merger
         $coverageHtmlColorWarning       = $defaultColors->warning();
         $coverageHtmlColorDanger        = $defaultColors->danger();
         $coverageHtmlCustomCssFile      = null;
+        $coverageOpenClover             = null;
         $coveragePhp                    = null;
         $coverageText                   = null;
         $coverageTextShowUncoveredFiles = false;
@@ -350,6 +357,12 @@ final readonly class Merger
             $coverageHtml = $cliConfiguration->coverageHtml();
         } elseif ($coverageFromXmlConfiguration && $xmlConfiguration->codeCoverage()->hasHtml()) {
             $coverageHtml = $xmlConfiguration->codeCoverage()->html()->target()->path();
+        }
+
+        if ($cliConfiguration->hasCoverageOpenClover()) {
+            $coverageOpenClover = $cliConfiguration->coverageOpenClover();
+        } elseif ($coverageFromXmlConfiguration && $xmlConfiguration->codeCoverage()->hasOpenClover()) {
+            $coverageOpenClover = $xmlConfiguration->codeCoverage()->openClover()->target()->path();
         }
 
         if ($cliConfiguration->hasCoveragePhp()) {
@@ -447,6 +460,12 @@ final readonly class Merger
             $disallowTestOutput = $xmlConfiguration->phpunit()->beStrictAboutOutputDuringTests();
         }
 
+        if ($cliConfiguration->hasDisplayDetailsOnAllIssues()) {
+            $displayDetailsOnAllIssues = $cliConfiguration->displayDetailsOnAllIssues();
+        } else {
+            $displayDetailsOnAllIssues = $xmlConfiguration->phpunit()->displayDetailsOnAllIssues();
+        }
+
         if ($cliConfiguration->hasDisplayDetailsOnIncompleteTests()) {
             $displayDetailsOnIncompleteTests = $cliConfiguration->displayDetailsOnIncompleteTests();
         } else {
@@ -540,6 +559,7 @@ final readonly class Merger
 
         $logfileTeamcity             = null;
         $logfileJunit                = null;
+        $logfileOtr                  = null;
         $logfileTestdoxHtml          = null;
         $logfileTestdoxText          = null;
         $loggingFromXmlConfiguration = true;
@@ -558,6 +578,12 @@ final readonly class Merger
             $logfileJunit = $cliConfiguration->junitLogfile();
         } elseif ($loggingFromXmlConfiguration && $xmlConfiguration->logging()->hasJunit()) {
             $logfileJunit = $xmlConfiguration->logging()->junit()->target()->path();
+        }
+
+        if ($cliConfiguration->hasOtrLogfile()) {
+            $logfileOtr = $cliConfiguration->otrLogfile();
+        } elseif ($loggingFromXmlConfiguration && $xmlConfiguration->logging()->hasOtr()) {
+            $logfileOtr = $xmlConfiguration->logging()->otr()->target()->path();
         }
 
         if ($cliConfiguration->hasTestdoxHtmlFile()) {
@@ -761,6 +787,10 @@ final readonly class Merger
         assert($useBaseline !== '');
         assert($generateBaseline !== '');
 
+        if ($failOnAllIssues) {
+            $displayDetailsOnAllIssues = true;
+        }
+
         if ($failOnDeprecation) {
             $displayDetailsOnTestsThatTriggerDeprecations = true;
         }
@@ -831,6 +861,7 @@ final readonly class Merger
             $coverageHtmlColorWarning,
             $coverageHtmlColorDanger,
             $coverageHtmlCustomCssFile,
+            $coverageOpenClover,
             $coveragePhp,
             $coverageText,
             $coverageTextShowUncoveredFiles,
@@ -839,6 +870,7 @@ final readonly class Merger
             $pathCoverage,
             $xmlConfiguration->codeCoverage()->ignoreDeprecatedCodeUnits(),
             $disableCodeCoverageIgnore,
+            $failOnAllIssues,
             $failOnDeprecation,
             $failOnPhpunitDeprecation,
             $failOnPhpunitNotice,
@@ -876,6 +908,7 @@ final readonly class Merger
             $reportUselessTests,
             $strictCoverage,
             $disallowTestOutput,
+            $displayDetailsOnAllIssues,
             $displayDetailsOnIncompleteTests,
             $displayDetailsOnSkippedTests,
             $displayDetailsOnTestsThatTriggerDeprecations,
@@ -894,6 +927,7 @@ final readonly class Merger
             $resolveDependencies,
             $logfileTeamcity,
             $logfileJunit,
+            $logfileOtr,
             $logfileTestdoxHtml,
             $logfileTestdoxText,
             $logEventsText,

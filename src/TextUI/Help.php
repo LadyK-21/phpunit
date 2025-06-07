@@ -221,6 +221,7 @@ final class Help
                 ['arg'    => '--fail-on-notice', 'desc' => 'Signal failure using shell exit code when a notice was triggered'],
                 ['arg'    => '--fail-on-skipped', 'desc' => 'Signal failure using shell exit code when a test was skipped'],
                 ['arg'    => '--fail-on-incomplete', 'desc' => 'Signal failure using shell exit code when a test was marked incomplete'],
+                ['arg'    => '--fail-on-all-issues', 'desc' => 'Signal failure using shell exit code when an issue is triggered'],
                 ['spacer' => ''],
 
                 ['arg'    => '--cache-result', 'desc' => 'Write test results to cache file'],
@@ -251,6 +252,7 @@ final class Help
                 ['arg'    => '--display-errors', 'desc' => 'Display details for errors triggered by tests'],
                 ['arg'    => '--display-notices', 'desc' => 'Display details for notices triggered by tests'],
                 ['arg'    => '--display-warnings', 'desc' => 'Display details for warnings triggered by tests'],
+                ['arg'    => '--display-all-issues', 'desc' => 'Display details for all issues that are triggered'],
                 ['arg'    => '--reverse-list', 'desc' => 'Print defects in reverse order'],
                 ['spacer' => ''],
 
@@ -265,6 +267,7 @@ final class Help
 
             'Logging' => [
                 ['arg' => '--log-junit <file>', 'desc' => 'Write test results in JUnit XML format to file'],
+                ['arg' => '--log-otr <file>', 'desc' => 'Write test results in Open Test Reporting XML format to file'],
                 ['arg' => '--log-teamcity <file>', 'desc' => 'Write test results in TeamCity format to file'],
                 ['arg' => '--testdox-html <file>', 'desc' => 'Write test results in TestDox format (HTML) to file'],
                 ['arg' => '--testdox-text <file>', 'desc' => 'Write test results in TestDox format (plain text) to file'],
@@ -275,6 +278,7 @@ final class Help
 
             'Code Coverage' => [
                 ['arg' => '--coverage-clover <file>', 'desc' => 'Write code coverage report in Clover XML format to file'],
+                ['arg' => '--coverage-openclover <file>', 'desc' => 'Write code coverage report in OpenClover XML format to file'],
                 ['arg' => '--coverage-cobertura <file>', 'desc' => 'Write code coverage report in Cobertura XML format to file'],
                 ['arg' => '--coverage-crap4j <file>', 'desc' => 'Write code coverage report in Crap4J XML format to file'],
                 ['arg' => '--coverage-html <dir>', 'desc' => 'Write code coverage report in HTML format to directory'],
