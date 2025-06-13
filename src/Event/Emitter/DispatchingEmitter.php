@@ -268,14 +268,21 @@ final class DispatchingEmitter implements Emitter
         );
     }
 
-    public function testRunnerStartedChildProcess(): void
+    public function childProcessStarted(): void
     {
         $this->dispatcher->dispatch(
             new TestRunner\ChildProcessStarted($this->telemetryInfo()),
         );
     }
 
-    public function testRunnerFinishedChildProcess(string $stdout, string $stderr): void
+    public function childProcessErrored(): void
+    {
+        $this->dispatcher->dispatch(
+            new TestRunner\ChildProcessErrored($this->telemetryInfo()),
+        );
+    }
+
+    public function childProcessFinished(string $stdout, string $stderr): void
     {
         $this->dispatcher->dispatch(
             new TestRunner\ChildProcessFinished(
@@ -333,12 +340,28 @@ final class DispatchingEmitter implements Emitter
      * @throws InvalidArgumentException
      * @throws UnknownEventTypeException
      */
-    public function testPreparationFailed(Code\Test $test): void
+    public function testPreparationErrored(Code\Test $test, Throwable $throwable): void
+    {
+        $this->dispatcher->dispatch(
+            new Test\PreparationErrored(
+                $this->telemetryInfo(),
+                $test,
+                $throwable,
+            ),
+        );
+    }
+
+    /**
+     * @throws InvalidArgumentException
+     * @throws UnknownEventTypeException
+     */
+    public function testPreparationFailed(Code\Test $test, Throwable $throwable): void
     {
         $this->dispatcher->dispatch(
             new Test\PreparationFailed(
                 $this->telemetryInfo(),
                 $test,
+                $throwable,
             ),
         );
     }
@@ -1004,6 +1027,23 @@ final class DispatchingEmitter implements Emitter
             new Test\PrintedUnexpectedOutput(
                 $this->telemetryInfo(),
                 $output,
+            ),
+        );
+    }
+
+    /**
+     * @param non-empty-string $additionalInformation
+     *
+     * @throws InvalidArgumentException
+     * @throws UnknownEventTypeException
+     */
+    public function testProvidedAdditionalInformation(TestMethod $test, string $additionalInformation): void
+    {
+        $this->dispatcher->dispatch(
+            new Test\AdditionalInformationProvided(
+                $this->telemetryInfo(),
+                $test,
+                $additionalInformation,
             ),
         );
     }

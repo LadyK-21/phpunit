@@ -75,7 +75,9 @@ interface Emitter
 
     public function testPreparationStarted(Code\Test $test): void;
 
-    public function testPreparationFailed(Code\Test $test): void;
+    public function testPreparationErrored(Code\Test $test, Throwable $throwable): void;
+
+    public function testPreparationFailed(Code\Test $test, Throwable $throwable): void;
 
     /**
      * @param class-string $testClassName
@@ -239,6 +241,11 @@ interface Emitter
     public function testPrintedUnexpectedOutput(string $output): void;
 
     /**
+     * @param non-empty-string $additionalInformation
+     */
+    public function testProvidedAdditionalInformation(TestMethod $test, string $additionalInformation): void;
+
+    /**
      * @param non-negative-int $numberOfAssertionsPerformed
      */
     public function testFinished(Code\Test $test, int $numberOfAssertionsPerformed): void;
@@ -281,9 +288,11 @@ interface Emitter
 
     public function testSuiteFinished(TestSuite $testSuite): void;
 
-    public function testRunnerStartedChildProcess(): void;
+    public function childProcessStarted(): void;
 
-    public function testRunnerFinishedChildProcess(string $stdout, string $stderr): void;
+    public function childProcessErrored(): void;
+
+    public function childProcessFinished(string $stdout, string $stderr): void;
 
     public function testRunnerStartedStaticAnalysisForCodeCoverage(): void;
 
