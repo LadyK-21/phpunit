@@ -11,7 +11,9 @@ namespace PHPUnit\TestRunner\TestResult;
 
 use function count;
 use PHPUnit\Event\Test\AfterLastTestMethodErrored;
+use PHPUnit\Event\Test\AfterLastTestMethodFailed;
 use PHPUnit\Event\Test\BeforeFirstTestMethodErrored;
+use PHPUnit\Event\Test\BeforeFirstTestMethodFailed;
 use PHPUnit\Event\Test\ConsideredRisky;
 use PHPUnit\Event\Test\Errored;
 use PHPUnit\Event\Test\Failed;
@@ -44,7 +46,7 @@ final readonly class TestResult
     private array $testErroredEvents;
 
     /**
-     * @var list<Failed>
+     * @var list<AfterLastTestMethodFailed|BeforeFirstTestMethodFailed|Failed>
      */
     private array $testFailedEvents;
 
@@ -145,7 +147,7 @@ final readonly class TestResult
 
     /**
      * @param list<AfterLastTestMethodErrored|BeforeFirstTestMethodErrored|Errored> $testErroredEvents
-     * @param list<Failed>                                                          $testFailedEvents
+     * @param list<AfterLastTestMethodFailed|BeforeFirstTestMethodFailed|Failed>    $testFailedEvents
      * @param array<string,list<ConsideredRisky>>                                   $testConsideredRiskyEvents
      * @param list<TestSuiteSkipped>                                                $testSuiteSkippedEvents
      * @param list<TestSkipped>                                                     $testSkippedEvents
@@ -440,21 +442,15 @@ final readonly class TestResult
 
     public function wasSuccessful(): bool
     {
-        return $this->wasSuccessfulIgnoringPhpunitWarnings() &&
-               !$this->hasTestTriggeredPhpunitErrorEvents() &&
-               !$this->hasTestRunnerTriggeredWarningEvents() &&
-               !$this->hasTestTriggeredPhpunitWarningEvents();
-    }
-
-    public function wasSuccessfulIgnoringPhpunitWarnings(): bool
-    {
         return !$this->hasTestErroredEvents() &&
-               !$this->hasTestFailedEvents();
+               !$this->hasTestFailedEvents() &&
+               !$this->hasTestTriggeredPhpunitErrorEvents();
     }
 
-    public function wasSuccessfulAndNoTestHasIssues(): bool
+    public function hasIssues(): bool
     {
-        return $this->wasSuccessful() && !$this->hasTestsWithIssues();
+        return $this->hasTestsWithIssues() ||
+               $this->hasTestRunnerTriggeredWarningEvents();
     }
 
     public function hasTestsWithIssues(): bool
@@ -465,7 +461,8 @@ final readonly class TestResult
                $this->errors !== [] ||
                $this->hasNotices() ||
                $this->hasWarnings() ||
-               $this->hasPhpunitNotices();
+               $this->hasPhpunitNotices() ||
+               $this->hasPhpunitWarnings();
     }
 
     /**
@@ -568,6 +565,17 @@ final readonly class TestResult
                count($this->testRunnerTriggeredDeprecationEvents);
     }
 
+    public function hasPhpunitWarnings(): bool
+    {
+        return $this->numberOfPhpunitWarnings() > 0;
+    }
+
+    public function numberOfPhpunitWarnings(): int
+    {
+        return count($this->testTriggeredPhpunitWarningEvents) +
+               count($this->testRunnerTriggeredWarningEvents);
+    }
+
     public function numberOfDeprecations(): int
     {
         return count($this->deprecations) +
@@ -595,9 +603,7 @@ final readonly class TestResult
     public function numberOfWarnings(): int
     {
         return count($this->warnings) +
-               count($this->phpWarnings) +
-               count($this->testTriggeredPhpunitWarningEvents) +
-               count($this->testRunnerTriggeredWarningEvents);
+               count($this->phpWarnings);
     }
 
     public function hasIncompleteTests(): bool

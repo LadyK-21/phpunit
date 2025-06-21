@@ -18,6 +18,8 @@ use PHPUnit\Event\Code\TestMethod;
 use PHPUnit\Event\Code\ThrowableBuilder;
 use PHPUnit\Event\Telemetry\SystemGarbageCollectorStatusProvider;
 use PHPUnit\Event\TestData\TestDataCollection;
+use PHPUnit\Event\TestRunner\ChildProcessErrored;
+use PHPUnit\Event\TestRunner\ChildProcessErroredSubscriber;
 use PHPUnit\Event\TestRunner\ChildProcessFinished;
 use PHPUnit\Event\TestRunner\ChildProcessFinishedSubscriber;
 use PHPUnit\Event\TestRunner\ChildProcessStarted;
@@ -658,8 +660,8 @@ final class DispatchingEmitterTest extends Framework\TestCase
         $this->assertInstanceOf(GarbageCollectionTriggered::class, $subscriber->lastRecordedEvent());
     }
 
-    #[TestDox('testRunnerStartedChildProcess() emits TestRunner\ChildProcessStarted event')]
-    public function testTestRunnerStartedChildProcessEmitsTestRunnerChildProcessStartedEvent(): void
+    #[TestDox('childProcessStarted() emits TestRunner\ChildProcessStarted event')]
+    public function testChildProcessStartedEmitsTestRunnerChildProcessStartedEvent(): void
     {
         $subscriber = new class extends RecordingSubscriber implements ChildProcessStartedSubscriber
         {
@@ -682,14 +684,44 @@ final class DispatchingEmitterTest extends Framework\TestCase
             $telemetrySystem,
         );
 
-        $emitter->testRunnerStartedChildProcess();
+        $emitter->childProcessStarted();
 
         $this->assertSame(1, $subscriber->recordedEventCount());
         $this->assertInstanceOf(ChildProcessStarted::class, $subscriber->lastRecordedEvent());
     }
 
-    #[TestDox('testRunnerFinishedChildProcess() emits TestRunner\ChildProcessFinished event')]
-    public function testTestRunnerFinishedChildProcessEmitsTestRunnerChildProcessFinishedEvent(): void
+    #[TestDox('childProcessErrored() emits TestRunner\ChildProcessErrored event')]
+    public function testChildProcessErroredEmitsTestRunnerChildProcessStartedEvent(): void
+    {
+        $subscriber = new class extends RecordingSubscriber implements ChildProcessErroredSubscriber
+        {
+            public function notify(ChildProcessErrored $event): void
+            {
+                $this->record($event);
+            }
+        };
+
+        $dispatcher = $this->dispatcherWithRegisteredSubscriber(
+            ChildProcessErroredSubscriber::class,
+            ChildProcessErrored::class,
+            $subscriber,
+        );
+
+        $telemetrySystem = $this->telemetrySystem();
+
+        $emitter = new DispatchingEmitter(
+            $dispatcher,
+            $telemetrySystem,
+        );
+
+        $emitter->childProcessErrored();
+
+        $this->assertSame(1, $subscriber->recordedEventCount());
+        $this->assertInstanceOf(ChildProcessErrored::class, $subscriber->lastRecordedEvent());
+    }
+
+    #[TestDox('childProcessFinished() emits TestRunner\ChildProcessFinished event')]
+    public function testChildProcessFinishedEmitsTestRunnerChildProcessFinishedEvent(): void
     {
         $subscriber = new class extends RecordingSubscriber implements ChildProcessFinishedSubscriber
         {
@@ -715,7 +747,7 @@ final class DispatchingEmitterTest extends Framework\TestCase
         $stdout = 'stdout';
         $stderr = 'stderr';
 
-        $emitter->testRunnerFinishedChildProcess($stdout, $stderr);
+        $emitter->childProcessFinished($stdout, $stderr);
 
         $this->assertSame(1, $subscriber->recordedEventCount());
 
@@ -836,6 +868,44 @@ final class DispatchingEmitterTest extends Framework\TestCase
         $this->assertSame($test, $event->test());
     }
 
+    #[TestDox('testPreparationErrored() emits Test\PreparationErrored event')]
+    public function testTestPreparationErroredEmitsTestPreparationErroredEvent(): void
+    {
+        $subscriber = new class extends RecordingSubscriber implements Test\PreparationErroredSubscriber
+        {
+            public function notify(Test\PreparationErrored $event): void
+            {
+                $this->record($event);
+            }
+        };
+
+        $dispatcher = $this->dispatcherWithRegisteredSubscriber(
+            Test\PreparationErroredSubscriber::class,
+            Test\PreparationErrored::class,
+            $subscriber,
+        );
+
+        $telemetrySystem = $this->telemetrySystem();
+
+        $emitter = new DispatchingEmitter(
+            $dispatcher,
+            $telemetrySystem,
+        );
+
+        $test      = $this->testValueObject();
+        $throwable = ThrowableBuilder::from(new Exception('message'));
+
+        $emitter->testPreparationErrored($test, $throwable);
+
+        $this->assertSame(1, $subscriber->recordedEventCount());
+
+        $event = $subscriber->lastRecordedEvent();
+
+        $this->assertInstanceOf(Test\PreparationErrored::class, $event);
+        $this->assertSame($test, $event->test());
+        $this->assertSame($throwable, $event->throwable());
+    }
+
     #[TestDox('testPreparationFailed() emits Test\PreparationFailed event')]
     public function testTestPreparationFailedEmitsTestPreparationFailedEvent(): void
     {
@@ -860,9 +930,10 @@ final class DispatchingEmitterTest extends Framework\TestCase
             $telemetrySystem,
         );
 
-        $test = $this->testValueObject();
+        $test      = $this->testValueObject();
+        $throwable = ThrowableBuilder::from(new Exception('message'));
 
-        $emitter->testPreparationFailed($test);
+        $emitter->testPreparationFailed($test, $throwable);
 
         $this->assertSame(1, $subscriber->recordedEventCount());
 
@@ -870,6 +941,7 @@ final class DispatchingEmitterTest extends Framework\TestCase
 
         $this->assertInstanceOf(Test\PreparationFailed::class, $event);
         $this->assertSame($test, $event->test());
+        $this->assertSame($throwable, $event->throwable());
     }
 
     #[TestDox('beforeFirstTestMethodCalled() emits Test\BeforeFirstTestMethodCalled event')]
@@ -2489,6 +2561,47 @@ final class DispatchingEmitterTest extends Framework\TestCase
 
         $this->assertInstanceOf(Test\PrintedUnexpectedOutput::class, $event);
         $this->assertSame($output, $event->output());
+    }
+
+    #[TestDox('testProvidedAdditionalInformation() emits Test\AdditionalInformationProvided event')]
+    public function testTestProvidedAdditionalInformationEmitsAdditionalInformationProvidedEvent(): void
+    {
+        $subscriber = new class extends RecordingSubscriber implements Test\AdditionalInformationProvidedSubscriber
+        {
+            public function notify(Test\AdditionalInformationProvided $event): void
+            {
+                $this->record($event);
+            }
+        };
+
+        $dispatcher = $this->dispatcherWithRegisteredSubscriber(
+            Test\AdditionalInformationProvidedSubscriber::class,
+            Test\AdditionalInformationProvided::class,
+            $subscriber,
+        );
+
+        $telemetrySystem = $this->telemetrySystem();
+        $test            = $this->testValueObject();
+
+        $emitter = new DispatchingEmitter(
+            $dispatcher,
+            $telemetrySystem,
+        );
+
+        $additionalInformation = 'addtional information';
+
+        $emitter->testProvidedAdditionalInformation(
+            $test,
+            $additionalInformation,
+        );
+
+        $this->assertSame(1, $subscriber->recordedEventCount());
+
+        $event = $subscriber->lastRecordedEvent();
+
+        $this->assertInstanceOf(Test\AdditionalInformationProvided::class, $event);
+        $this->assertSame($test, $event->test());
+        $this->assertSame($additionalInformation, $event->additionalInformation());
     }
 
     #[TestDox('testFinished() emits Test\Finished event')]

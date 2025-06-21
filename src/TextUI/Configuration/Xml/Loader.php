@@ -61,11 +61,13 @@ use PHPUnit\TextUI\XmlConfiguration\CodeCoverage\Report\Clover;
 use PHPUnit\TextUI\XmlConfiguration\CodeCoverage\Report\Cobertura;
 use PHPUnit\TextUI\XmlConfiguration\CodeCoverage\Report\Crap4j;
 use PHPUnit\TextUI\XmlConfiguration\CodeCoverage\Report\Html as CodeCoverageHtml;
+use PHPUnit\TextUI\XmlConfiguration\CodeCoverage\Report\OpenClover;
 use PHPUnit\TextUI\XmlConfiguration\CodeCoverage\Report\Php as CodeCoveragePhp;
 use PHPUnit\TextUI\XmlConfiguration\CodeCoverage\Report\Text as CodeCoverageText;
 use PHPUnit\TextUI\XmlConfiguration\CodeCoverage\Report\Xml as CodeCoverageXml;
 use PHPUnit\TextUI\XmlConfiguration\Logging\Junit;
 use PHPUnit\TextUI\XmlConfiguration\Logging\Logging;
+use PHPUnit\TextUI\XmlConfiguration\Logging\Otr;
 use PHPUnit\TextUI\XmlConfiguration\Logging\TeamCity;
 use PHPUnit\TextUI\XmlConfiguration\Logging\TestDox\Html as TestDoxHtml;
 use PHPUnit\TextUI\XmlConfiguration\Logging\TestDox\Text as TestDoxText;
@@ -122,7 +124,7 @@ final readonly class Loader
             $this->groups($xpath),
             $this->logging($configurationFileRealpath, $xpath),
             $this->php($configurationFileRealpath, $xpath),
-            $this->phpunit($configurationFileRealpath, $document),
+            $this->phpunit($configurationFileRealpath, $document, $xpath),
             $this->testSuite($configurationFileRealpath, $xpath),
         );
     }
@@ -134,6 +136,20 @@ final readonly class Loader
 
         if ($element !== null) {
             $junit = new Junit(
+                new File(
+                    $this->toAbsolutePath(
+                        $filename,
+                        (string) $this->parseStringAttribute($element, 'outputFile'),
+                    ),
+                ),
+            );
+        }
+
+        $otr     = null;
+        $element = $this->element($xpath, 'logging/otr');
+
+        if ($element !== null) {
+            $otr = new Otr(
                 new File(
                     $this->toAbsolutePath(
                         $filename,
@@ -187,6 +203,7 @@ final readonly class Loader
 
         return new Logging(
             $junit,
+            $otr,
             $teamCity,
             $testDoxHtml,
             $testDoxText,
@@ -451,6 +468,20 @@ final readonly class Loader
             );
         }
 
+        $openClover = null;
+        $element    = $this->element($xpath, 'coverage/report/openclover');
+
+        if ($element !== null) {
+            $openClover = new OpenClover(
+                new File(
+                    $this->toAbsolutePath(
+                        $filename,
+                        (string) $this->parseStringAttribute($element, 'outputFile'),
+                    ),
+                ),
+            );
+        }
+
         $php     = null;
         $element = $this->element($xpath, 'coverage/report/php');
 
@@ -504,6 +535,7 @@ final readonly class Loader
             $cobertura,
             $crap4j,
             $html,
+            $openClover,
             $php,
             $text,
             $xml,
@@ -771,7 +803,7 @@ final readonly class Loader
         );
     }
 
-    private function phpunit(string $filename, DOMDocument $document): PHPUnit
+    private function phpunit(string $filename, DOMDocument $document, DOMXPath $xpath): PHPUnit
     {
         $executionOrder      = TestSuiteSorter::ORDER_DEFAULT;
         $defectsFirst        = false;
@@ -873,6 +905,7 @@ final readonly class Loader
             $this->parseColumns($document),
             $this->parseColors($document),
             $this->parseBooleanAttribute($document->documentElement, 'stderr', false),
+            $this->parseBooleanAttribute($document->documentElement, 'displayDetailsOnAllIssues', false),
             $this->parseBooleanAttribute($document->documentElement, 'displayDetailsOnIncompleteTests', false),
             $this->parseBooleanAttribute($document->documentElement, 'displayDetailsOnSkippedTests', false),
             $this->parseBooleanAttribute($document->documentElement, 'displayDetailsOnTestsThatTriggerDeprecations', false),
@@ -884,10 +917,13 @@ final readonly class Loader
             $this->parseBooleanAttribute($document->documentElement, 'reverseDefectList', false),
             $requireCoverageMetadata,
             $bootstrap,
+            $this->bootstrapForTestSuite($filename, $xpath),
             $this->parseBooleanAttribute($document->documentElement, 'processIsolation', false),
+            $this->parseBooleanAttribute($document->documentElement, 'failOnAllIssues', false),
             $this->parseBooleanAttribute($document->documentElement, 'failOnDeprecation', false),
             $this->parseBooleanAttribute($document->documentElement, 'failOnPhpunitDeprecation', false),
             $this->parseBooleanAttribute($document->documentElement, 'failOnPhpunitNotice', false),
+            $this->parseBooleanAttribute($document->documentElement, 'failOnPhpunitWarning', true),
             $this->parseBooleanAttribute($document->documentElement, 'failOnEmptyTestSuite', false),
             $this->parseBooleanAttribute($document->documentElement, 'failOnIncomplete', false),
             $this->parseBooleanAttribute($document->documentElement, 'failOnNotice', false),
@@ -957,6 +993,30 @@ final readonly class Loader
         }
 
         return $columns;
+    }
+
+    /**
+     * @return array<non-empty-string, non-empty-string>
+     */
+    private function bootstrapForTestSuite(string $filename, DOMXPath $xpath): array
+    {
+        $bootstrapForTestSuite = [];
+
+        foreach ($this->parseTestSuiteElements($xpath) as $element) {
+            if (!$element->hasAttribute('bootstrap')) {
+                continue;
+            }
+
+            $name      = $element->getAttribute('name');
+            $bootstrap = $element->getAttribute('bootstrap');
+
+            assert($name !== '');
+            assert($bootstrap !== '');
+
+            $bootstrapForTestSuite[$name] = $this->toAbsolutePath($filename, $bootstrap);
+        }
+
+        return $bootstrapForTestSuite;
     }
 
     private function testSuite(string $filename, DOMXPath $xpath): TestSuiteCollection
