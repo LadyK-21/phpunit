@@ -17,6 +17,7 @@ use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\TestStatus\TestStatus;
 use PHPUnit\Framework\TestSuite;
 use PHPUnit\Runner\ResultCache\DefaultResultCache;
+use PHPUnit\Runner\ResultCache\ResultCacheId;
 use PHPUnit\TestFixture\MultiDependencyTest;
 use ReflectionClass;
 
@@ -503,6 +504,42 @@ final class TestSuiteSorterTest extends TestCase
         $this->assertSame($expectedOrder, $sorter->getExecutionOrder());
     }
 
+    public function testCanSetRandomizationWithDefectsFirst(): void
+    {
+        $cache = new DefaultResultCache;
+
+        $runState = [
+            'testOne'   => ['state' => TestStatus::success(), 'time' => 1],
+            'testTwo'   => ['state' => TestStatus::success(), 'time' => 1],
+            'testThree' => ['state' => TestStatus::error(), 'time' => 1],
+            'testFour'  => ['state' => TestStatus::success(), 'time' => 1],
+            'testFive'  => ['state' => TestStatus::error(), 'time' => 1],
+        ];
+
+        foreach ($runState as $testName => $data) {
+            $cache->setStatus(ResultCacheId::fromTestClassAndMethodName(MultiDependencyTest::class, $testName), $data['state']);
+            $cache->setTime(ResultCacheId::fromTestClassAndMethodName(MultiDependencyTest::class, $testName), $data['time']);
+        }
+
+        $sorter = new TestSuiteSorter($cache);
+
+        $suite = TestSuite::empty('test suite name');
+        $suite->addTestSuite(new ReflectionClass(MultiDependencyTest::class));
+
+        mt_srand(54321);
+        $sorter->reorderTestsInSuite($suite, TestSuiteSorter::ORDER_RANDOMIZED, false, TestSuiteSorter::ORDER_DEFECTS_FIRST);
+
+        $expectedOrder = [
+            MultiDependencyTest::class . '::testFive',
+            MultiDependencyTest::class . '::testThree',
+            MultiDependencyTest::class . '::testTwo',
+            MultiDependencyTest::class . '::testFour',
+            MultiDependencyTest::class . '::testOne',
+        ];
+
+        $this->assertSame($expectedOrder, $sorter->getExecutionOrder());
+    }
+
     public function testCanSetRandomizationWithASeedAndResolveDependencies(): void
     {
         $suite = TestSuite::empty('test suite name');
@@ -552,7 +589,7 @@ final class TestSuiteSorterTest extends TestCase
         $cache = new DefaultResultCache;
 
         foreach ($testTimes as $testName => $time) {
-            $cache->setTime(MultiDependencyTest::class . '::' . $testName, $time);
+            $cache->setTime(ResultCacheId::fromTestClassAndMethodName(MultiDependencyTest::class, $testName), $time);
         }
 
         $sorter = new TestSuiteSorter($cache);
@@ -576,8 +613,8 @@ final class TestSuiteSorterTest extends TestCase
         $cache = new DefaultResultCache;
 
         foreach ($runState as $testName => $data) {
-            $cache->setStatus(MultiDependencyTest::class . '::' . $testName, $data['state']);
-            $cache->setTime(MultiDependencyTest::class . '::' . $testName, $data['time']);
+            $cache->setStatus(ResultCacheId::fromTestClassAndMethodName(MultiDependencyTest::class, $testName), $data['state']);
+            $cache->setTime(ResultCacheId::fromTestClassAndMethodName(MultiDependencyTest::class, $testName), $data['time']);
         }
 
         $sorter = new TestSuiteSorter($cache);
