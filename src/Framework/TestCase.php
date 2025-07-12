@@ -843,17 +843,15 @@ abstract class TestCase extends Assert implements Reorderable, SelfDescribing, T
      */
     final public function dataSetAsString(): string
     {
-        $buffer = '';
-
         if ($this->data !== []) {
             if (is_int($this->dataName)) {
-                $buffer .= sprintf(' with data set #%d', $this->dataName);
-            } else {
-                $buffer .= sprintf(' with data set "%s"', $this->dataName);
+                return sprintf(' with data set %s', $this->dataSetAsFilterString());
             }
+
+            return sprintf(' with data set "%s"', $this->dataSetAsFilterString());
         }
 
-        return $buffer;
+        return '';
     }
 
     /**
@@ -865,8 +863,9 @@ abstract class TestCase extends Assert implements Reorderable, SelfDescribing, T
             return '';
         }
 
-        return $this->dataSetAsString() . sprintf(
-            ' (%s)',
+        return sprintf(
+            '%s with data (%s)',
+            $this->dataSetAsFilterString(),
             Exporter::shortenedRecursiveExport($this->data),
         );
     }
@@ -1269,6 +1268,24 @@ abstract class TestCase extends Assert implements Reorderable, SelfDescribing, T
     }
 
     /**
+     * Returns the data set as a string compatible with the --filter CLI option.
+     *
+     * @internal This method is not covered by the backward compatibility promise for PHPUnit
+     */
+    private function dataSetAsFilterString(): string
+    {
+        if ($this->data !== []) {
+            if (is_int($this->dataName)) {
+                return sprintf('#%d', $this->dataName);
+            }
+
+            return sprintf('@%s', $this->dataName);
+        }
+
+        return '';
+    }
+
+    /**
      * @throws AssertionFailedError
      * @throws Exception
      * @throws ExpectationFailedException
@@ -1453,6 +1470,10 @@ abstract class TestCase extends Assert implements Reorderable, SelfDescribing, T
                     'This test depends on a test that is larger than itself',
                 );
 
+                return true;
+            }
+
+            if (!$passedTests->hasReturnValue($dependencyTarget)) {
                 return true;
             }
 

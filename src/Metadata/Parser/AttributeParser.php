@@ -52,6 +52,7 @@ use PHPUnit\Framework\Attributes\ExcludeStaticPropertyFromBackup;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\Attributes\IgnorePhpunitDeprecations;
+use PHPUnit\Framework\Attributes\IgnorePhpunitWarnings;
 use PHPUnit\Framework\Attributes\Large;
 use PHPUnit\Framework\Attributes\Medium;
 use PHPUnit\Framework\Attributes\PostCondition;
@@ -73,6 +74,8 @@ use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\TestDox;
+use PHPUnit\Framework\Attributes\TestDoxFormatter;
+use PHPUnit\Framework\Attributes\TestDoxFormatterExternal;
 use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\Attributes\TestWithJson;
 use PHPUnit\Framework\Attributes\Ticket;
@@ -853,6 +856,20 @@ final readonly class AttributeParser implements Parser
 
                     break;
 
+                case TestDoxFormatter::class:
+                    assert($attributeInstance instanceof TestDoxFormatter);
+
+                    $result[] = Metadata::testDoxFormatter($className, $attributeInstance->methodName());
+
+                    break;
+
+                case TestDoxFormatterExternal::class:
+                    assert($attributeInstance instanceof TestDoxFormatterExternal);
+
+                    $result[] = Metadata::testDoxFormatter($attributeInstance->className(), $attributeInstance->methodName());
+
+                    break;
+
                 case TestWith::class:
                     assert($attributeInstance instanceof TestWith);
 
@@ -881,6 +898,13 @@ final readonly class AttributeParser implements Parser
                     assert($attributeInstance instanceof WithoutErrorHandler);
 
                     $result[] = Metadata::withoutErrorHandler();
+
+                    break;
+
+                case IgnorePhpunitWarnings::class:
+                    assert($attributeInstance instanceof IgnorePhpunitWarnings);
+
+                    $result[] = Metadata::ignorePhpunitWarnings($attributeInstance->messagePattern());
 
                     break;
             }
